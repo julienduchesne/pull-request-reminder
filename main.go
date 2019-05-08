@@ -13,7 +13,7 @@ func main() {
 		for _, repository := range host.GetRepositories() {
 			for _, pullRequest := range repository.OpenPullRequests {
 				var logIgnoredPullRequest = func(message string) {
-					log.Info(repository.Name, "->", pullRequest.GetLink(), " ignored because: ", message)
+					log.Info(repository.Name, "->", pullRequest.Link, " ignored because: ", message)
 				}
 
 				if !pullRequest.IsFromOneOfUsers(host.GetUsers()) {
@@ -24,7 +24,7 @@ func main() {
 					logIgnoredPullRequest("Marked WIP")
 					continue
 				}
-				if len(pullRequest.Reviewers(host.GetUsers())) == 0 {
+				if len(pullRequest.TeamReviewers(host.GetUsers())) == 0 {
 					logIgnoredPullRequest("No reviewers")
 					continue
 				}

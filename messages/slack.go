@@ -147,7 +147,7 @@ func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []*hosts.Re
 			titleBlock,
 		)
 
-		var addPullRequestSections = func(title string, pullRequests []hosts.PullRequest) {
+		var addPullRequestSections = func(title string, pullRequests []*hosts.PullRequest) {
 			if len(pullRequests) == 0 {
 				return
 			}
@@ -158,7 +158,7 @@ func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []*hosts.Re
 			sections = append(sections, pullRequestTitle)
 			for _, pr := range pullRequests {
 				pullRequestBlock := slack.NewSectionBlock(
-					slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("<%v|%v>", pr.GetLink(), pr.GetTitle()), false, false),
+					slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("<%v|%v>", pr.Link, pr.Title), false, false),
 					nil, nil,
 				)
 				sections = append(sections, pullRequestBlock)
