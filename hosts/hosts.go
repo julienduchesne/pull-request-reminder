@@ -3,6 +3,8 @@ package hosts
 import (
 	"regexp"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Reviewer struct {
@@ -65,6 +67,7 @@ type Repository struct {
 	OpenPullRequests          []*PullRequest
 	ReadyToMergePullRequests  []*PullRequest
 	ReadyToReviewPullRequests []*PullRequest
+	pullRequestsCategorized   bool
 }
 
 func NewRepository(host Host, name, link string) *Repository {
@@ -75,10 +78,47 @@ func NewRepository(host Host, name, link string) *Repository {
 		OpenPullRequests:          []*PullRequest{},
 		ReadyToMergePullRequests:  []*PullRequest{},
 		ReadyToReviewPullRequests: []*PullRequest{},
+		pullRequestsCategorized:   false,
 	}
 }
 
+func (repository *Repository) CategorizePullRequests() {
+	if repository.pullRequestsCategorized {
+		return
+	}
+
+	for _, pullRequest := range repository.OpenPullRequests {
+
+		var logIgnoredPullRequest = func(message string) {
+			log.Info(repository.Name, "->", pullRequest.Link, " ignored because: ", message)
+		}
+
+		if !pullRequest.IsFromOneOfUsers(repository.Host.GetUsers()) {
+			logIgnoredPullRequest("Not from one of the team's users")
+			continue
+		}
+		if pullRequest.IsWIP() {
+			logIgnoredPullRequest("Marked WIP")
+			continue
+		}
+		if len(pullRequest.TeamReviewers(repository.Host.GetUsers())) == 0 {
+			logIgnoredPullRequest("No reviewers")
+			continue
+		}
+
+		if pullRequest.IsApproved(repository.Host.GetUsers()) {
+			repository.ReadyToMergePullRequests = append(repository.ReadyToMergePullRequests, pullRequest)
+		} else {
+			repository.ReadyToReviewPullRequests = append(repository.ReadyToReviewPullRequests, pullRequest)
+		}
+	}
+	repository.pullRequestsCategorized = true
+}
+
 func (repository *Repository) HasPullRequestsToDisplay() bool {
+	if !repository.pullRequestsCategorized {
+		repository.CategorizePullRequests()
+	}
 	return len(repository.ReadyToMergePullRequests)+len(repository.ReadyToReviewPullRequests) > 0
 }
 
