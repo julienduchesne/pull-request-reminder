@@ -52,12 +52,6 @@ func (pr *bitbucketPullRequest) ToGenericPullRequest() *PullRequest {
 	}
 }
 
-type bitbucketListPullRequestsResponse struct {
-	Values []struct {
-		ID int
-	}
-}
-
 type bitbucketCloud struct {
 	client          *bitbucket.Client
 	users           []string
@@ -85,10 +79,11 @@ func newBitbucketCloud() *bitbucketCloud {
 
 }
 
-func (host *bitbucketCloud) getPullRequests(owner, repoSlug string) ([]*bitbucketPullRequest, error) {
+func (host *bitbucketCloud) getPullRequests(owner, repoSlug string) ([]*PullRequest, error) {
 	var (
 		err      error
 		response interface{}
+		result   = []*PullRequest{}
 	)
 
 	opt := &bitbucket.PullRequestsOptions{
@@ -105,7 +100,11 @@ func (host *bitbucketCloud) getPullRequests(owner, repoSlug string) ([]*bitbucke
 		return nil, err
 	}
 
-	listedPullRequests, detailedpullRequests := &bitbucketListPullRequestsResponse{}, []*bitbucketPullRequest{}
+	listedPullRequests := &struct {
+		Values []struct {
+			ID int
+		}
+	}{}
 	if err = mapstructure.Decode(response, &listedPullRequests); err != nil {
 		return nil, err
 	}
@@ -120,10 +119,10 @@ func (host *bitbucketCloud) getPullRequests(owner, repoSlug string) ([]*bitbucke
 		if err = mapstructure.Decode(response, &pullRequest); err != nil {
 			return nil, err
 		}
-		detailedpullRequests = append(detailedpullRequests, &pullRequest)
+		result = append(result, pullRequest.ToGenericPullRequest())
 	}
 
-	return detailedpullRequests, nil
+	return result, nil
 }
 
 func (host *bitbucketCloud) GetName() string {
@@ -144,9 +143,7 @@ func (host *bitbucketCloud) GetRepositories() []*Repository {
 		if err != nil {
 			log.WithError(err).Fatalln("Caught an error while describing pull requests")
 		}
-		for _, pullRequest := range pullRequests {
-			repository.OpenPullRequests = append(repository.OpenPullRequests, pullRequest.ToGenericPullRequest())
-		}
+		repository.OpenPullRequests = pullRequests
 		repositories = append(repositories, repository)
 	}
 	return repositories

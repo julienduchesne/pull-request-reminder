@@ -93,5 +93,8 @@ func GetHosts() []Host {
 	if bitbucketCloud := newBitbucketCloud(); bitbucketCloud != nil {
 		hosts = append(hosts, bitbucketCloud)
 	}
+	if githubHost := newGithubHost(); githubHost != nil {
+		hosts = append(hosts, githubHost)
+	}
 	return hosts
 }
