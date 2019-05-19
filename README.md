@@ -47,13 +47,13 @@ This app supports a configuration file with following format (JSON or YAML)
 
 ### Environment
 Credentials can also be set globally as environment variables
-- PRR_BITBUCKET_USERNAME
-- PRR_BITBUCKET_PASSWORD
-- PRR_GITHUB_TOKEN
-- PRR_SLACK_TOKEN
+- **PRR_BITBUCKET_USERNAME**
+- **PRR_BITBUCKET_PASSWORD**
+- **PRR_GITHUB_TOKEN**
+- **PRR_SLACK_TOKEN**
 
 You can also set the config file path with the following environment variable
-- PRR_CONFIG
+- **PRR_CONFIG**: This path can either be a path to a file on the local file system or a S3 path (s3://bucket/key)
 
 ### To run
 Simply run the executable, without any parameters
