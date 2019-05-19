@@ -13,8 +13,8 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	repositoriesNeedingAction := []*hosts.Repository{}
 	for _, team := range config.Teams {
+		repositoriesNeedingAction := []*hosts.Repository{}
 		for _, host := range hosts.GetHosts(team) {
 			for _, repository := range host.GetRepositories() {
 				if repository.HasPullRequestsToDisplay() {
@@ -22,8 +22,10 @@ func main() {
 				}
 			}
 		}
-		for _, handler := range messages.GetHandlers(team) {
-			handler.Notify(repositoriesNeedingAction)
+		if len(repositoriesNeedingAction) > 0 {
+			for _, handler := range messages.GetHandlers(team) {
+				handler.Notify(repositoriesNeedingAction)
+			}
 		}
 	}
 }
