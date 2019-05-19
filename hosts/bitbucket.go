@@ -2,11 +2,11 @@ package hosts
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
 	"github.com/cenkalti/backoff"
+	"github.com/julienduchesne/pull-request-reminder/config"
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
@@ -58,23 +58,11 @@ type bitbucketCloud struct {
 	repositoryNames []string
 }
 
-func newBitbucketCloud() *bitbucketCloud {
-	username := os.Getenv("BITBUCKET_USERNAME")
-	password := os.Getenv("BITBUCKET_PASSWORD")
-	repositoryNames := strings.Split(os.Getenv("BITBUCKET_REPOSITORIES"), ";")
-	users := strings.Split(os.Getenv("BITBUCKET_USERS"), ";")
-	if repositoryNames[0] == "" || users[0] == "" {
-		log.Infoln("You must set BITBUCKET_REPOSITORIES and BITBUCKET_USERS to handle bitbucket")
-		return nil
-	}
-	if username == "" || password == "" {
-		log.Infoln("You must set BITBUCKET_USERNAME and BITBUCKET_PASSWORD to handle bitbucket")
-		return nil
-	}
+func newBitbucketCloud(config *config.TeamConfig) *bitbucketCloud {
 	return &bitbucketCloud{
-		client:          bitbucket.NewBasicAuth(username, password),
-		repositoryNames: repositoryNames,
-		users:           users,
+		client:          bitbucket.NewBasicAuth(config.Bitbucket.Username, config.Bitbucket.Password),
+		repositoryNames: config.Bitbucket.Repositories,
+		users:           config.GetBitbucketUsers(),
 	}
 
 }

@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/julienduchesne/pull-request-reminder/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -128,13 +129,17 @@ type Host interface {
 	GetUsers() []string
 }
 
-func GetHosts() []Host {
+func GetHosts(config *config.TeamConfig) []Host {
 	hosts := []Host{}
-	if bitbucketCloud := newBitbucketCloud(); bitbucketCloud != nil {
-		hosts = append(hosts, bitbucketCloud)
+	if config.IsBitbucketConfigured() {
+		hosts = append(hosts, newBitbucketCloud(config))
+	} else {
+		log.Infoln("Bitbucket is not configured")
 	}
-	if githubHost := newGithubHost(); githubHost != nil {
-		hosts = append(hosts, githubHost)
+	if config.IsGithubConfigured() {
+		hosts = append(hosts, newGithubHost(config))
+	} else {
+		log.Infoln("Github is not configured")
 	}
 	return hosts
 }

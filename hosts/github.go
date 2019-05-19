@@ -3,10 +3,10 @@ package hosts
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/google/go-github/v25/github"
+	"github.com/julienduchesne/pull-request-reminder/config"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
@@ -18,26 +18,18 @@ type githubHost struct {
 	repositoryNames []string
 }
 
-func newGithubHost() *githubHost {
-	token := os.Getenv("GITHUB_TOKEN")
-	repositoryNames := strings.Split(os.Getenv("GITHUB_REPOSITORIES"), ";")
-	users := strings.Split(os.Getenv("GITHUB_USERS"), ";")
-	if repositoryNames[0] == "" || users[0] == "" || token == "" {
-		log.Infoln("You must set GITHUB_REPOSITORIES, GITHUB_USERS and GITHUB_TOKEN to handle github")
-		return nil
-	}
-
+func newGithubHost(config *config.TeamConfig) *githubHost {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
+		&oauth2.Token{AccessToken: config.Github.Token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
 	return &githubHost{
 		client:          github.NewClient(tc),
 		ctx:             ctx,
-		repositoryNames: repositoryNames,
-		users:           users,
+		repositoryNames: config.Github.Repositories,
+		users:           config.GetGithubUsers(),
 	}
 
 }

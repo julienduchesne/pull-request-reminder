@@ -2,11 +2,10 @@ package messages
 
 import (
 	"fmt"
-	"os"
 
+	"github.com/julienduchesne/pull-request-reminder/config"
 	"github.com/julienduchesne/pull-request-reminder/hosts"
 	"github.com/nlopes/slack"
-	log "github.com/sirupsen/logrus"
 )
 
 type slackMessageHandler struct {
@@ -57,16 +56,9 @@ func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []*hosts.Re
 	}
 }
 
-func newSlackMessageHandler() *slackMessageHandler {
-	slackToken := os.Getenv("SLACK_TOKEN")
-	slackChannel := os.Getenv("SLACK_CHANNEL")
-
-	if slackToken == "" || slackChannel == "" {
-		log.Infoln("SLACK_TOKEN and SLACK_CHANNEL must be defined to handle slack")
-		return nil
-	}
+func newSlackMessageHandler(config *config.TeamConfig) *slackMessageHandler {
 	return &slackMessageHandler{
-		channel: slackChannel,
-		client:  slack.New(slackToken),
+		channel: config.Slack.Channel,
+		client:  slack.New(config.Slack.Token),
 	}
 }
