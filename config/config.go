@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/kelseyhightower/envconfig"
@@ -8,6 +9,8 @@ import (
 )
 
 type EnvironmentConfig struct {
+	ConfigFilePath string `envconfig:"config"`
+
 	BitbucketUsername string `envconfig:"bitbucket_username"`
 	BitbucketPassword string `envconfig:"bitbucket_password"`
 	GithubToken       string `envconfig:"github_token"`
@@ -18,18 +21,21 @@ type GlobalConfig struct {
 	Teams []*TeamConfig
 }
 
-func ReadConfig(configFilePath string) (*GlobalConfig, error) {
+func ReadConfig() (*GlobalConfig, error) {
 	config := &GlobalConfig{}
-	yamlFile, err := ioutil.ReadFile(configFilePath)
-	if err != nil {
+	envConfig := &EnvironmentConfig{}
+	if err := envconfig.Process("prr", envConfig); err != nil {
 		return nil, err
 	}
-	if err = yaml.Unmarshal(yamlFile, &config); err != nil {
-		return nil, err
+	if envConfig.ConfigFilePath == "" {
+		envConfig.ConfigFilePath = ".prr-config"
 	}
 
-	envConfig := &EnvironmentConfig{}
-	if err = envconfig.Process("prr", envConfig); err != nil {
+	yamlFile, err := ioutil.ReadFile(envConfig.ConfigFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to read the config file: %v", err)
+	}
+	if err = yaml.Unmarshal(yamlFile, &config); err != nil {
 		return nil, err
 	}
 
