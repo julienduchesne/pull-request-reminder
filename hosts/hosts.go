@@ -77,27 +77,24 @@ type Repository struct {
 	OpenPullRequests          []*PullRequest
 	ReadyToMergePullRequests  []*PullRequest
 	ReadyToReviewPullRequests []*PullRequest
-	pullRequestsCategorized   bool
 }
 
 // NewRepository creates a Repository instance
-func NewRepository(host Host, name, link string) *Repository {
-	return &Repository{
+func NewRepository(host Host, name, link string, openPullRequests []*PullRequest) *Repository {
+	repository := &Repository{
 		Link:                      link,
 		Name:                      name,
 		Host:                      host,
-		OpenPullRequests:          []*PullRequest{},
+		OpenPullRequests:          openPullRequests,
 		ReadyToMergePullRequests:  []*PullRequest{},
 		ReadyToReviewPullRequests: []*PullRequest{},
-		pullRequestsCategorized:   false,
 	}
+	repository.categorizePullRequests()
+	return repository
+
 }
 
 func (repository *Repository) categorizePullRequests() {
-	if repository.pullRequestsCategorized {
-		return
-	}
-
 	for _, pullRequest := range repository.OpenPullRequests {
 
 		var logIgnoredPullRequest = func(message string) {
@@ -123,14 +120,10 @@ func (repository *Repository) categorizePullRequests() {
 			repository.ReadyToReviewPullRequests = append(repository.ReadyToReviewPullRequests, pullRequest)
 		}
 	}
-	repository.pullRequestsCategorized = true
 }
 
 // HasPullRequestsToDisplay returns true if at least one of the pull requests needs action by the team (ready to merge or needs approval)
 func (repository *Repository) HasPullRequestsToDisplay() bool {
-	if !repository.pullRequestsCategorized {
-		repository.categorizePullRequests()
-	}
 	return len(repository.ReadyToMergePullRequests)+len(repository.ReadyToReviewPullRequests) > 0
 }
 

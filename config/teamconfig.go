@@ -21,12 +21,14 @@ type TeamConfig struct {
 		Token   string
 	}
 
-	Users []struct {
-		Name              string
-		BitbucketUsername string `yaml:"bitbucket_username"`
-		GithubUsername    string `yaml:"github_username"`
-		SlackUsername     string `yaml:"slack_username"`
-	}
+	Users []user
+}
+
+type user struct {
+	Name              string
+	BitbucketUsername string `yaml:"bitbucket_username"`
+	GithubUsername    string `yaml:"github_username"`
+	SlackUsername     string `yaml:"slack_username"`
 }
 
 // GetBitbucketUsers returns a list of all bitbucket users' usernames

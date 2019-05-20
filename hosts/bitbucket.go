@@ -124,14 +124,13 @@ func (host *bitbucketCloud) GetUsers() []string {
 func (host *bitbucketCloud) GetRepositories() []*Repository {
 	repositories := []*Repository{}
 	for _, repositoryName := range host.repositoryNames {
-		repository := NewRepository(host, repositoryName, fmt.Sprintf("https://bitbucket.org/%v", repositoryName))
 		splitRepository := strings.Split(repositoryName, "/")
 		owner, slug := splitRepository[0], splitRepository[1]
 		pullRequests, err := host.getPullRequests(owner, slug)
 		if err != nil {
 			log.WithError(err).Fatalln("Caught an error while describing pull requests")
 		}
-		repository.OpenPullRequests = pullRequests
+		repository := NewRepository(host, repositoryName, fmt.Sprintf("https://bitbucket.org/%v", repositoryName), pullRequests)
 		repositories = append(repositories, repository)
 	}
 	return repositories

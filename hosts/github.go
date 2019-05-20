@@ -101,14 +101,13 @@ func (host *githubHost) GetUsers() []string {
 func (host *githubHost) GetRepositories() []*Repository {
 	repositories := []*Repository{}
 	for _, repositoryName := range host.repositoryNames {
-		repository := NewRepository(host, repositoryName, fmt.Sprintf("https://github.com/%v", repositoryName))
 		splitRepository := strings.Split(repositoryName, "/")
 		owner, slug := splitRepository[0], splitRepository[1]
 		pullRequests, err := host.getPullRequests(owner, slug)
 		if err != nil {
 			log.WithError(err).Fatalln("Caught an error while describing pull requests")
 		}
-		repository.OpenPullRequests = pullRequests
+		repository := NewRepository(host, repositoryName, fmt.Sprintf("https://github.com/%v", repositoryName), pullRequests)
 		repositories = append(repositories, repository)
 	}
 	return repositories
