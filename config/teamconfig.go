@@ -1,7 +1,7 @@
 package config
 
 // TeamConfig represents the full configuration needed to handle a team.
-// Since teams are all independant, this struct is passed to all handlers and
+// Since teams are all independent, this struct is passed to all handlers and
 // it needs to contain all the necessary information to do the whole job
 type TeamConfig struct {
 	Name      string
