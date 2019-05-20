@@ -1,4 +1,4 @@
-FROM scratch
+FROM alpine
 
 ADD pull-request-reminder /app/pull-request-reminder
 WORKDIR /app

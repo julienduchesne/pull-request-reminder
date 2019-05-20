@@ -7,7 +7,6 @@ import (
 )
 
 func TestGetUsers(t *testing.T) {
-
 	cases := []struct {
 		name                   string
 		config                 *TeamConfig
@@ -22,7 +21,7 @@ func TestGetUsers(t *testing.T) {
 		},
 		{
 			name: "No bitbucket users",
-			config: &TeamConfig{Users: []user{
+			config: &TeamConfig{Users: []User{
 				{BitbucketUsername: "", GithubUsername: "test"},
 			}},
 			expectedBitbucketUsers: []string{},
@@ -30,7 +29,7 @@ func TestGetUsers(t *testing.T) {
 		},
 		{
 			name: "No github users",
-			config: &TeamConfig{Users: []user{
+			config: &TeamConfig{Users: []User{
 				{BitbucketUsername: "test", GithubUsername: ""},
 			}},
 			expectedBitbucketUsers: []string{"test"},
@@ -38,7 +37,7 @@ func TestGetUsers(t *testing.T) {
 		},
 		{
 			name: "Bitbucket and github",
-			config: &TeamConfig{Users: []user{
+			config: &TeamConfig{Users: []User{
 				{BitbucketUsername: "test1"},
 				{BitbucketUsername: "", GithubUsername: "test2"},
 				{BitbucketUsername: "test3"},
@@ -54,5 +53,4 @@ func TestGetUsers(t *testing.T) {
 			assert.Equal(t, tt.config.GetGithubUsers(), tt.expectedGithubUsers)
 		})
 	}
-
 }

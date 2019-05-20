@@ -5,26 +5,29 @@ package config
 // it needs to contain all the necessary information to do the whole job
 type TeamConfig struct {
 	Name      string
-	Bitbucket struct {
-		Username     string
-		Password     string
-		Repositories []string
-	}
-
-	Github struct {
-		Repositories []string
-		Token        string
-	}
-
-	Slack struct {
-		Channel string
-		Token   string
-	}
-
-	Users []user
+	Bitbucket BitbucketConfig
+	Github    GithubConfig
+	Slack     SlackConfig
+	Users     []User
 }
 
-type user struct {
+type BitbucketConfig struct {
+	Username     string
+	Password     string
+	Repositories []string
+}
+
+type GithubConfig struct {
+	Repositories []string
+	Token        string
+}
+
+type SlackConfig struct {
+	Channel string
+	Token   string
+}
+
+type User struct {
 	Name              string
 	BitbucketUsername string `yaml:"bitbucket_username"`
 	GithubUsername    string `yaml:"github_username"`
