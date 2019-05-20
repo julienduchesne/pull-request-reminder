@@ -1,4 +1,6 @@
 # pull-request-reminder
+[![Build Status](https://travis-ci.org/julienduchesne/pull-request-reminder.svg?branch=master)](https://travis-ci.org/julienduchesne/pull-request-reminder)
+[![codecov](https://codecov.io/gh/julienduchesne/pull-request-reminder/branch/master/graph/badge.svg)](https://codecov.io/gh/julienduchesne/pull-request-reminder)
 [![Go Report Card](https://goreportcard.com/badge/github.com/julienduchesne/pull-request-reminder)](https://goreportcard.com/report/github.com/julienduchesne/pull-request-reminder)
 
 Open source pull request reminder
