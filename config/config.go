@@ -16,23 +16,25 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	ConfigFileName = ".prr-config"
-)
+const defaultConfigFileName = ".prr-config"
 
+// EnvironmentConfig represents all configurations that can be set using environment variables
 type EnvironmentConfig struct {
 	ConfigFilePath string `envconfig:"config"`
 
 	BitbucketUsername string `envconfig:"bitbucket_username"`
 	BitbucketPassword string `envconfig:"bitbucket_password"`
 	GithubToken       string `envconfig:"github_token"`
-	SlackToken        string `envconfig:"slack_token"	`
+	SlackToken        string `envconfig:"slack_token"`
 }
 
+// GlobalConfig represents the read configuration file
 type GlobalConfig struct {
 	Teams []*TeamConfig
 }
 
+// ReadConfig reads environment variables and then reads the configuration file
+// Relevant configs from the environment variables are then injected into the returned GlobalConfig
 func ReadConfig() (config *GlobalConfig, err error) {
 	envConfig := &EnvironmentConfig{}
 	if err = envconfig.Process("prr", envConfig); err != nil {
@@ -40,7 +42,7 @@ func ReadConfig() (config *GlobalConfig, err error) {
 	}
 
 	if envConfig.ConfigFilePath == "" {
-		envConfig.ConfigFilePath = ConfigFileName
+		envConfig.ConfigFilePath = defaultConfigFileName
 	}
 
 	if strings.HasPrefix(envConfig.ConfigFilePath, "s3://") {
@@ -54,7 +56,7 @@ func ReadConfig() (config *GlobalConfig, err error) {
 	}
 
 	for _, team := range config.Teams {
-		team.SetEnvironmentConfig(envConfig)
+		team.setEnvironmentConfig(envConfig)
 	}
 
 	return
@@ -67,7 +69,7 @@ func readS3Config(s3Path string) (*GlobalConfig, error) {
 	}
 
 	tempdir := os.TempDir()
-	configFileName := path.Join(tempdir, ConfigFileName)
+	configFileName := path.Join(tempdir, defaultConfigFileName)
 	defer os.Remove(tempdir)
 
 	configFile, err := os.Create(configFileName)
