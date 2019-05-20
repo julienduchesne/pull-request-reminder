@@ -15,7 +15,7 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/nlopes/slack v0.5.1-0.20190421170715-65ea2b979a7f
 	github.com/pkg/errors v0.8.1 // indirect
-	github.com/sirupsen/logrus v1.4.1
+	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.3.0
 	golang.org/x/net v0.0.0-20190420063019-afa5a82059c6 // indirect
