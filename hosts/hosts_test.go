@@ -9,7 +9,42 @@ import (
 )
 
 func TestCategorizePullRequests(t *testing.T) {
+	approvedByOtherUserPR := &PullRequest{Title: "Approved by otheruser", Author: "user1", Reviewers: []*Reviewer{
+		&Reviewer{Approved: true, Username: "otheruser"},
+		&Reviewer{Approved: false, Username: "user2"},
+	}}
+	notApprovedPR := &PullRequest{Title: "Not approved", Author: "user1", Reviewers: []*Reviewer{
+		&Reviewer{Approved: false, Username: "user1"},
+		&Reviewer{Approved: false, Username: "user2"},
+	}}
+	approvedPR := &PullRequest{Title: "Approved", Author: "user1", Reviewers: []*Reviewer{
+		&Reviewer{Approved: true, Username: "user1"},
+		&Reviewer{Approved: false, Username: "user2"},
+	}}
 
+	openPullRequests := []*PullRequest{
+		&PullRequest{Title: "User not from team", Author: "otheruser", Reviewers: []*Reviewer{
+			&Reviewer{Approved: false, Username: "user1"},
+			&Reviewer{Approved: false, Username: "user2"},
+		}},
+		&PullRequest{Title: "[WIP] My Title", Author: "user1", Reviewers: []*Reviewer{
+			&Reviewer{Approved: false, Username: "user1"},
+			&Reviewer{Approved: false, Username: "user2"},
+		}},
+		&PullRequest{Title: "No Reviewers", Author: "user1"},
+		approvedByOtherUserPR,
+		notApprovedPR,
+		approvedPR,
+	}
+	repository := NewRepository(&bitbucketCloud{users: []string{"user1", "user2"}}, "repo-name", "http://example.com", openPullRequests)
+
+	assert.True(t, repository.HasPullRequestsToDisplay())
+	assert.Len(t, repository.ReadyToMergePullRequests, 1)
+	assert.Contains(t, repository.ReadyToMergePullRequests, approvedPR)
+
+	assert.Len(t, repository.ReadyToReviewPullRequests, 2)
+	assert.Contains(t, repository.ReadyToReviewPullRequests, notApprovedPR)
+	assert.Contains(t, repository.ReadyToReviewPullRequests, approvedByOtherUserPR)
 }
 
 func TestGetHosts(t *testing.T) {

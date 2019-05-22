@@ -5,6 +5,13 @@
 
 Open source pull request reminder
 
+### Supported hosts
+* Github
+* Bitbucket
+
+### Supported message handlers
+* Slack
+
 ## Configuration
 
 ### Configuration file
