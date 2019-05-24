@@ -7,6 +7,8 @@ import (
 )
 
 func TestGetUsers(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name                   string
 		config                 *TeamConfig
@@ -49,6 +51,8 @@ func TestGetUsers(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			assert.Equal(t, tt.config.GetBitbucketUsers(), tt.expectedBitbucketUsers)
 			assert.Equal(t, tt.config.GetGithubUsers(), tt.expectedGithubUsers)
 		})

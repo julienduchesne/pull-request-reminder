@@ -9,9 +9,13 @@ import (
 )
 
 func main() {
-	config, err := config.ReadConfig()
+	configReader, err := config.NewConfigReader()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Error while initializing the configuration reader: %v", err)
+	}
+	config, err := configReader.ReadConfig()
+	if err != nil {
+		log.Fatalf("Error while reading the configuration: %v", err)
 	}
 	for _, team := range config.Teams {
 		repositoriesNeedingAction := []*hosts.Repository{}

@@ -9,6 +9,8 @@ import (
 )
 
 func TestCategorizePullRequests(t *testing.T) {
+	t.Parallel()
+
 	approvedByOtherUserPR := &PullRequest{Title: "Approved by otheruser", Author: "user1", Reviewers: []*Reviewer{
 		&Reviewer{Approved: true, Username: "otheruser"},
 		&Reviewer{Approved: false, Username: "user2"},
@@ -48,6 +50,8 @@ func TestCategorizePullRequests(t *testing.T) {
 }
 
 func TestGetHosts(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name          string
 		config        *config.TeamConfig
@@ -84,6 +88,7 @@ func TestGetHosts(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			gottenHosts := GetHosts(tt.config)
 			for _, hostType := range tt.expectedHosts {
 				hasType := false

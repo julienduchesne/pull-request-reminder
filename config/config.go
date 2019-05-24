@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -11,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/kelseyhightower/envconfig"
 	"gopkg.in/yaml.v2"
 )
@@ -33,63 +34,74 @@ type GlobalConfig struct {
 	Teams []*TeamConfig
 }
 
-// ReadConfig reads environment variables and then reads the configuration file
-// Relevant configs from the environment variables are then injected into the returned GlobalConfig
-func ReadConfig() (config *GlobalConfig, err error) {
-	envConfig := &EnvironmentConfig{}
-	if err = envconfig.Process("prr", envConfig); err != nil {
-		return
-	}
+type ConfigReader struct {
+	envConfig *EnvironmentConfig
+	readFunc  func(string) (*GlobalConfig, error)
+}
 
+func NewConfigReader() (*ConfigReader, error) {
+	envConfig := &EnvironmentConfig{}
+	if err := envconfig.Process("prr", envConfig); err != nil {
+		return nil, err
+	}
 	if envConfig.ConfigFilePath == "" {
 		envConfig.ConfigFilePath = defaultConfigFileName
 	}
+	configReader := &ConfigReader{envConfig: envConfig}
 
 	if strings.HasPrefix(envConfig.ConfigFilePath, "s3://") {
-		config, err = readS3Config(envConfig.ConfigFilePath)
+		sess := session.Must(session.NewSessionWithOptions(session.Options{
+			SharedConfigState: session.SharedConfigEnable,
+		}))
+		configReader.readFunc = getS3ConfigReadFunc(s3.New(sess))
 	} else {
-		config, err = readFileConfig(envConfig.ConfigFilePath)
+		configReader.readFunc = readFileConfig
 	}
 
-	if err != nil {
+	return configReader, nil
+}
+
+func (configReader *ConfigReader) ReadConfig() (config *GlobalConfig, err error) {
+	if config, err = configReader.readFunc(configReader.envConfig.ConfigFilePath); err != nil {
 		return nil, err
 	}
-
 	for _, team := range config.Teams {
-		team.setEnvironmentConfig(envConfig)
+		team.setEnvironmentConfig(configReader.envConfig)
 	}
-
 	return
 }
 
-func readS3Config(s3Path string) (*GlobalConfig, error) {
-	splitS3Path, err := url.Parse(s3Path)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse the given S3 config path: %v", err)
+func getS3ConfigReadFunc(client s3iface.S3API) func(string) (*GlobalConfig, error) {
+	return func(s3Path string) (*GlobalConfig, error) {
+		splitS3Path, err := url.Parse(s3Path)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse the given S3 config path: %v", err)
+		}
+
+		tempdir := os.TempDir()
+		configFileName := path.Join(tempdir, defaultConfigFileName)
+		defer os.Remove(tempdir)
+
+		configFile, err := os.Create(configFileName)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to create a temporary config file %q, %v", configFileName, err)
+		}
+		defer configFile.Close()
+
+		var resp *s3.GetObjectOutput
+		if resp, err = client.GetObject(&s3.GetObjectInput{
+			Bucket: aws.String(splitS3Path.Host),
+			Key:    aws.String(splitS3Path.Path),
+		}); err != nil {
+			return nil, fmt.Errorf("Failed to download the config file from S3, %v", err)
+		}
+
+		if _, err = io.Copy(configFile, resp.Body); err != nil {
+			return nil, fmt.Errorf("Failed to write the config file downloaded from S3, %v", err)
+		}
+
+		return readFileConfig(configFileName)
 	}
-
-	tempdir := os.TempDir()
-	configFileName := path.Join(tempdir, defaultConfigFileName)
-	defer os.Remove(tempdir)
-
-	configFile, err := os.Create(configFileName)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create a temporary config file %q, %v", configFileName, err)
-	}
-
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-	downloader := s3manager.NewDownloader(sess)
-
-	if _, err = downloader.Download(configFile, &s3.GetObjectInput{
-		Bucket: aws.String(splitS3Path.Host),
-		Key:    aws.String(splitS3Path.Path),
-	}); err != nil {
-		return nil, fmt.Errorf("Failed to download the config file from S3, %v", err)
-	}
-
-	return readFileConfig(configFileName)
 }
 
 func readFileConfig(configFilePath string) (*GlobalConfig, error) {
