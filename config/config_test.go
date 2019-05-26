@@ -1,12 +1,12 @@
 package config
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -16,38 +16,12 @@ import (
 )
 
 const (
-	testGlobalConfig = `{
-    "teams": [
-        {
-            "name": "test_team",
-            "bitbucket": {
-                "repositories": [
-                    "test_repo"
-                ]
-            },
-            "github": {
-                "repositories": [
-                    "test_repo"
-                ]
-            },
-            "slack": {
-                "channel": "#my_channel"
-            },
-            "users": [
-                {
-                    "name": "John Doe",
-                    "github_username": "jdoe",
-                    "bitbucket_username": "jdoe",
-                    "slack_username": "jdoe"
-                }
-            ]
-        }
-    ]
-}`
 	s3Path   = "s3://bucket-name/path/to/config"
 	s3Bucket = "bucket-name"
 	s3Key    = "/path/to/config"
 )
+
+var testGlobalConfig, err = ioutil.ReadFile("./test_config.json")
 
 func TestReadingConfigSetsEnvironmentVariables(t *testing.T) {
 	t.Parallel()
@@ -57,17 +31,17 @@ func TestReadingConfigSetsEnvironmentVariables(t *testing.T) {
 		envConfig: envConfig,
 		readFunc: func(string) (*GlobalConfig, error) {
 			config := &GlobalConfig{}
-			yaml.Unmarshal([]byte(testGlobalConfig), config)
+			yaml.Unmarshal(testGlobalConfig, config)
 			return config, nil
 		},
 	}
 
 	config, _ := configReader.ReadConfig()
 	team := config.Teams[0]
-	assert.Equal(t, envConfig.BitbucketUsername, team.Bitbucket.Username)
-	assert.Equal(t, envConfig.BitbucketPassword, team.Bitbucket.Password)
-	assert.Equal(t, envConfig.GithubToken, team.Github.Token)
-	assert.Equal(t, envConfig.SlackToken, team.Slack.Token)
+	assert.Equal(t, envConfig.BitbucketUsername, team.Hosts.Bitbucket.Username)
+	assert.Equal(t, envConfig.BitbucketPassword, team.Hosts.Bitbucket.Password)
+	assert.Equal(t, envConfig.GithubToken, team.Hosts.Github.Token)
+	assert.Equal(t, envConfig.SlackToken, team.Messaging.Slack.Token)
 }
 
 func TestReadFileConfig(t *testing.T) {
@@ -75,7 +49,7 @@ func TestReadFileConfig(t *testing.T) {
 	configFileName := path.Join(tempdir, defaultConfigFileName)
 	defer os.Remove(tempdir)
 
-	ioutil.WriteFile(configFileName, []byte(testGlobalConfig), 0644)
+	ioutil.WriteFile(configFileName, testGlobalConfig, 0644)
 
 	configReader := &Reader{
 		envConfig: getTestEnvConfig(configFileName),
@@ -148,5 +122,5 @@ type mockedS3Client struct {
 func (mock *mockedS3Client) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
 	assert.Equal(mock.t, s3Bucket, *input.Bucket)
 	assert.Equal(mock.t, s3Key, *input.Key)
-	return &s3.GetObjectOutput{Body: ioutil.NopCloser(strings.NewReader(testGlobalConfig))}, nil
+	return &s3.GetObjectOutput{Body: ioutil.NopCloser(bytes.NewReader(testGlobalConfig))}, nil
 }

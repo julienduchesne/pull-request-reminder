@@ -52,55 +52,75 @@ func (pr *bitbucketPullRequest) ToGenericPullRequest() *PullRequest {
 	}
 }
 
+type bitbucketClientInterface interface {
+	GetPullRequests(owner, slug, id string) (interface{}, error)
+}
+
+type bitbucketClientWrapper struct {
+	client *bitbucket.Client
+}
+
+func newBitbucketClientWrapper(config config.BitbucketConfig) *bitbucketClientWrapper {
+	return &bitbucketClientWrapper{client: bitbucket.NewBasicAuth(config.Username, config.Password)}
+}
+
+func (wrapper *bitbucketClientWrapper) GetPullRequests(owner, slug, id string) (interface{}, error) {
+	var (
+		err      error
+		response interface{}
+	)
+	opt := &bitbucket.PullRequestsOptions{
+		Owner:    owner,
+		RepoSlug: slug,
+	}
+	if id != "" {
+		opt.ID = id
+	}
+	getPullRequestFunc := func() error {
+		response, err = wrapper.client.Repositories.PullRequests.Get(opt)
+		return err
+	}
+	err = backoff.Retry(getPullRequestFunc, backoff.NewExponentialBackOff())
+	if err != nil {
+		return nil, err
+	}
+	return response, err
+}
+
 type bitbucketCloud struct {
-	client          *bitbucket.Client
+	client          bitbucketClientInterface
 	users           []string
 	repositoryNames []string
 }
 
 func newBitbucketCloud(config *config.TeamConfig) *bitbucketCloud {
+	bitbucketConfig := config.Hosts.Bitbucket
 	return &bitbucketCloud{
-		client:          bitbucket.NewBasicAuth(config.Bitbucket.Username, config.Bitbucket.Password),
-		repositoryNames: config.Bitbucket.Repositories,
+		client:          newBitbucketClientWrapper(bitbucketConfig),
+		repositoryNames: bitbucketConfig.Repositories,
 		users:           config.GetBitbucketUsers(),
 	}
 
 }
 
 func (host *bitbucketCloud) getPullRequests(owner, repoSlug string) ([]*PullRequest, error) {
-	var (
-		err      error
-		response interface{}
-		result   = []*PullRequest{}
-	)
-
-	opt := &bitbucket.PullRequestsOptions{
-		Owner:    owner,
-		RepoSlug: repoSlug,
-	}
-	getPullRequestFunc := func() error {
-		response, err = host.client.Repositories.PullRequests.Get(opt)
-		return err
-	}
-
-	err = backoff.Retry(getPullRequestFunc, backoff.NewExponentialBackOff())
-	if err != nil {
-		return nil, err
-	}
-
+	result := []*PullRequest{}
 	listedPullRequests := &struct {
 		Values []struct {
 			ID int
 		}
 	}{}
+
+	response, err := host.client.GetPullRequests(owner, repoSlug, "")
+	if err != nil {
+		return nil, fmt.Errorf("Error fetching pull requests from %v/%v in Bitbucket", owner, repoSlug)
+	}
 	if err = mapstructure.Decode(response, &listedPullRequests); err != nil {
 		return nil, err
 	}
 
 	for _, listedPullRequest := range listedPullRequests.Values {
-		opt.ID = strconv.Itoa(listedPullRequest.ID)
-		err = backoff.Retry(getPullRequestFunc, backoff.NewExponentialBackOff())
-		if err != nil {
+		if response, err = host.client.GetPullRequests(owner, repoSlug, strconv.Itoa(listedPullRequest.ID)); err != nil {
 			return nil, err
 		}
 		var pullRequest bitbucketPullRequest

@@ -109,7 +109,7 @@ func getTeamConfig(withBitbucket bool, withGithub bool) *config.TeamConfig {
 		Users: []config.User{},
 	}
 	if withBitbucket {
-		teamConfig.Bitbucket = config.BitbucketConfig{
+		teamConfig.Hosts.Bitbucket = config.BitbucketConfig{
 			Username:     "user",
 			Password:     "pass",
 			Repositories: []string{"repo"},
@@ -120,7 +120,7 @@ func getTeamConfig(withBitbucket bool, withGithub bool) *config.TeamConfig {
 		})
 	}
 	if withGithub {
-		teamConfig.Github = config.GithubConfig{
+		teamConfig.Hosts.Github = config.GithubConfig{
 			Token:        "token",
 			Repositories: []string{"repo"},
 		}

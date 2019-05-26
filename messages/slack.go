@@ -23,9 +23,10 @@ func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []*hosts.Re
 }
 
 func newSlackMessageHandler(config *config.TeamConfig) *slackMessageHandler {
+	slackConfig := config.Messaging.Slack
 	return &slackMessageHandler{
-		channel: config.Slack.Channel,
-		client:  slack.New(config.Slack.Token),
+		channel: slackConfig.Channel,
+		client:  slack.New(slackConfig.Token),
 	}
 }
 

@@ -19,16 +19,17 @@ type githubHost struct {
 }
 
 func newGithubHost(config *config.TeamConfig) *githubHost {
+	githubConfig := config.Hosts.Github
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: config.Github.Token},
+		&oauth2.Token{AccessToken: githubConfig.Token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
 	return &githubHost{
 		client:          github.NewClient(tc),
 		ctx:             ctx,
-		repositoryNames: config.Github.Repositories,
+		repositoryNames: githubConfig.Repositories,
 		users:           config.GetGithubUsers(),
 	}
 

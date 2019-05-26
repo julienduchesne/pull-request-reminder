@@ -1,0 +1,32 @@
+{
+    "teams": [
+        {
+            "name": "test_team",
+            "hosts": {
+                "bitbucket": {
+                    "repositories": [
+                        "test_repo"
+                    ]
+                },
+                "github": {
+                    "repositories": [
+                        "test_repo"
+                    ]
+                }
+            },
+            "messaging": {
+                "slack": {
+                    "channel": "#my_channel"
+                }
+            },
+            "users": [
+                {
+                    "name": "John Doe",
+                    "github_username": "jdoe",
+                    "bitbucket_username": "jdoe",
+                    "slack_username": "jdoe"
+                }
+            ]
+        }
+    ]
+}

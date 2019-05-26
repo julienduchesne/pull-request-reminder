@@ -27,7 +27,7 @@ func TestBitbucketTeamConfig(t *testing.T) {
 	assert.Equal(t, []string{"test"}, config.GetBitbucketUsers())
 	assert.False(t, config.IsBitbucketConfigured())
 
-	config.Bitbucket = BitbucketConfig{
+	config.Hosts.Bitbucket = BitbucketConfig{
 		Username:     "test",
 		Password:     "test",
 		Repositories: []string{"test"},
@@ -44,7 +44,7 @@ func TestGithubTeamConfig(t *testing.T) {
 	assert.Equal(t, []string{"test"}, config.GetGithubUsers())
 	assert.False(t, config.IsGithubConfigured())
 
-	config.Github = GithubConfig{
+	config.Hosts.Github = GithubConfig{
 		Token:        "test",
 		Repositories: []string{"test"},
 	}

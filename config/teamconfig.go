@@ -4,11 +4,15 @@ package config
 // Since teams are all independent, this struct is passed to all handlers and
 // it needs to contain all the necessary information to do the whole job
 type TeamConfig struct {
-	Name      string
-	Bitbucket BitbucketConfig
-	Github    GithubConfig
-	Slack     SlackConfig
-	Users     []User
+	Name  string
+	Hosts struct {
+		Bitbucket BitbucketConfig
+		Github    GithubConfig
+	}
+	Messaging struct {
+		Slack SlackConfig
+	}
+	Users []User
 }
 
 // BitbucketConfig represents a team's bitbucket configuration
@@ -51,8 +55,9 @@ func (config *TeamConfig) GetBitbucketUsers() []string {
 
 // IsBitbucketConfigured returns true if all necessary configurations are set to handle Bitbucket
 func (config *TeamConfig) IsBitbucketConfigured() bool {
-	return len(config.Bitbucket.Repositories) > 0 && len(config.GetBitbucketUsers()) > 0 &&
-		config.Bitbucket.Username != "" && config.Bitbucket.Password != ""
+	bitbucketConfig := config.Hosts.Bitbucket
+	return len(bitbucketConfig.Repositories) > 0 && len(config.GetBitbucketUsers()) > 0 &&
+		bitbucketConfig.Username != "" && bitbucketConfig.Password != ""
 }
 
 // GetGithubUsers returns a list of all github users' usernames
@@ -68,21 +73,25 @@ func (config *TeamConfig) GetGithubUsers() []string {
 
 // IsGithubConfigured returns true if all necessary configurations are set to handle Github
 func (config *TeamConfig) IsGithubConfigured() bool {
-	return len(config.Github.Repositories) > 0 && len(config.GetGithubUsers()) > 0 &&
-		config.Github.Token != ""
+	githubConfig := config.Hosts.Github
+	return len(githubConfig.Repositories) > 0 && len(config.GetGithubUsers()) > 0 &&
+		githubConfig.Token != ""
 }
 
 func (config *TeamConfig) setEnvironmentConfig(envConfig *EnvironmentConfig) {
-	if config.Bitbucket.Username == "" {
-		config.Bitbucket.Username = envConfig.BitbucketUsername
+	bitbucketConfig := &config.Hosts.Bitbucket
+	githubConfig := &config.Hosts.Github
+	slackConfig := &config.Messaging.Slack
+	if bitbucketConfig.Username == "" {
+		bitbucketConfig.Username = envConfig.BitbucketUsername
 	}
-	if config.Bitbucket.Password == "" {
-		config.Bitbucket.Password = envConfig.BitbucketPassword
+	if bitbucketConfig.Password == "" {
+		bitbucketConfig.Password = envConfig.BitbucketPassword
 	}
-	if config.Github.Token == "" {
-		config.Github.Token = envConfig.GithubToken
+	if githubConfig.Token == "" {
+		githubConfig.Token = envConfig.GithubToken
 	}
-	if config.Slack.Token == "" {
-		config.Slack.Token = envConfig.SlackToken
+	if slackConfig.Token == "" {
+		slackConfig.Token = envConfig.SlackToken
 	}
 }
