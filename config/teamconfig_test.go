@@ -6,55 +6,47 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetUsers(t *testing.T) {
+func TestEmptyTeamConfig(t *testing.T) {
 	t.Parallel()
 
-	cases := []struct {
-		name                   string
-		config                 *TeamConfig
-		expectedBitbucketUsers []string
-		expectedGithubUsers    []string
-	}{
-		{
-			name:                   "No users",
-			config:                 &TeamConfig{},
-			expectedBitbucketUsers: []string{},
-			expectedGithubUsers:    []string{},
-		},
-		{
-			name: "No bitbucket users",
-			config: &TeamConfig{Users: []User{
-				{BitbucketUsername: "", GithubUsername: "test"},
-			}},
-			expectedBitbucketUsers: []string{},
-			expectedGithubUsers:    []string{"test"},
-		},
-		{
-			name: "No github users",
-			config: &TeamConfig{Users: []User{
-				{BitbucketUsername: "test", GithubUsername: ""},
-			}},
-			expectedBitbucketUsers: []string{"test"},
-			expectedGithubUsers:    []string{},
-		},
-		{
-			name: "Bitbucket and github",
-			config: &TeamConfig{Users: []User{
-				{BitbucketUsername: "test1"},
-				{BitbucketUsername: "", GithubUsername: "test2"},
-				{BitbucketUsername: "test3"},
-			}},
-			expectedBitbucketUsers: []string{"test1", "test3"},
-			expectedGithubUsers:    []string{"test2"},
-		},
-	}
+	config := &TeamConfig{Users: []User{
+		{BitbucketUsername: "", GithubUsername: ""},
+	}}
+	assert.False(t, config.IsBitbucketConfigured())
+	assert.Empty(t, config.GetBitbucketUsers())
+	assert.False(t, config.IsGithubConfigured())
+	assert.Empty(t, config.GetGithubUsers())
+}
 
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+func TestBitbucketTeamConfig(t *testing.T) {
+	t.Parallel()
 
-			assert.Equal(t, tt.config.GetBitbucketUsers(), tt.expectedBitbucketUsers)
-			assert.Equal(t, tt.config.GetGithubUsers(), tt.expectedGithubUsers)
-		})
+	config := &TeamConfig{Users: []User{
+		{BitbucketUsername: "test", GithubUsername: ""},
+	}}
+	assert.Equal(t, []string{"test"}, config.GetBitbucketUsers())
+	assert.False(t, config.IsBitbucketConfigured())
+
+	config.Bitbucket = BitbucketConfig{
+		Username:     "test",
+		Password:     "test",
+		Repositories: []string{"test"},
 	}
+	assert.True(t, config.IsBitbucketConfigured())
+}
+
+func TestGithubTeamConfig(t *testing.T) {
+	t.Parallel()
+
+	config := &TeamConfig{Users: []User{
+		{BitbucketUsername: "", GithubUsername: "test"},
+	}}
+	assert.Equal(t, []string{"test"}, config.GetGithubUsers())
+	assert.False(t, config.IsGithubConfigured())
+
+	config.Github = GithubConfig{
+		Token:        "test",
+		Repositories: []string{"test"},
+	}
+	assert.True(t, config.IsGithubConfigured())
 }

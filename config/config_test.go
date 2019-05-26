@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -92,6 +94,35 @@ func TestReadS3Config(t *testing.T) {
 	config, err := configReader.ReadConfig()
 	assert.Len(t, config.Teams, 1)
 	assert.Nil(t, err)
+}
+
+func TestCreateConfigReader(t *testing.T) {
+	configReader, err := NewConfigReader()
+	assert.Nil(t, err)
+	assert.Equal(t, defaultConfigFileName, configReader.envConfig.ConfigFilePath)
+	expectedFunc := runtime.FuncForPC(reflect.ValueOf(readFileConfig).Pointer()).Name()
+	gottenFunc := runtime.FuncForPC(reflect.ValueOf(configReader.readFunc).Pointer()).Name()
+	assert.Equal(t, expectedFunc, gottenFunc)
+
+	for key, value := range map[string]string{
+		"PRR_BITBUCKET_PASSWORD": "bb_pass",
+		"PRR_BITBUCKET_USERNAME": "bb_user",
+		"PRR_GITHUB_TOKEN":       "gh_token",
+		"PRR_SLACK_TOKEN":        "xoxb_test",
+		"PRR_CONFIG":             "s3://bucket/key",
+	} {
+		os.Setenv(key, value)
+		defer os.Unsetenv(key)
+	}
+	configReader, err = NewConfigReader()
+	assert.Nil(t, err)
+	assert.Equal(t, "bb_pass", configReader.envConfig.BitbucketPassword)
+	assert.Equal(t, "bb_user", configReader.envConfig.BitbucketUsername)
+	assert.Equal(t, "gh_token", configReader.envConfig.GithubToken)
+	assert.Equal(t, "xoxb_test", configReader.envConfig.SlackToken)
+	expectedFunc = runtime.FuncForPC(reflect.ValueOf(getS3ConfigReadFunc(nil)).Pointer()).Name()
+	gottenFunc = runtime.FuncForPC(reflect.ValueOf(configReader.readFunc).Pointer()).Name()
+	assert.Equal(t, expectedFunc, gottenFunc)
 }
 
 func getTestEnvConfig(path string) *EnvironmentConfig {
