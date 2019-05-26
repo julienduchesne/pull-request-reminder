@@ -3,6 +3,8 @@ package messages
 import (
 	"testing"
 
+	"github.com/julienduchesne/pull-request-reminder/config"
+
 	"github.com/julienduchesne/pull-request-reminder/hosts"
 	"github.com/stretchr/testify/assert"
 )
@@ -50,7 +52,7 @@ func (host *mockHost) GetName() string {
 	return "mock"
 }
 
-func (host *mockHost) GetUsers() []string {
+func (host *mockHost) GetUsers() map[string]config.User {
 	return nil
 }
 

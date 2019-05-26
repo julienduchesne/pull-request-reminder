@@ -36,18 +36,18 @@ type SlackConfig struct {
 
 // User represents a team member's configuration
 type User struct {
-	Name              string
-	BitbucketUsername string `yaml:"bitbucket_username"`
-	GithubUsername    string `yaml:"github_username"`
-	SlackUsername     string `yaml:"slack_username"`
+	Name           string
+	BitbucketUUID  string `yaml:"bitbucket_uuid"`
+	GithubUsername string `yaml:"github_username"`
+	SlackUsername  string `yaml:"slack_username"`
 }
 
-// GetBitbucketUsers returns a list of all bitbucket users' usernames
-func (config *TeamConfig) GetBitbucketUsers() []string {
-	users := []string{}
+// GetBitbucketUsers returns a map of all bitbucket users'
+func (config *TeamConfig) GetBitbucketUsers() map[string]User {
+	users := map[string]User{}
 	for _, user := range config.Users {
-		if user.BitbucketUsername != "" {
-			users = append(users, user.BitbucketUsername)
+		if user.BitbucketUUID != "" {
+			users[user.BitbucketUUID] = user
 		}
 	}
 	return users
@@ -60,12 +60,12 @@ func (config *TeamConfig) IsBitbucketConfigured() bool {
 		bitbucketConfig.Username != "" && bitbucketConfig.Password != ""
 }
 
-// GetGithubUsers returns a list of all github users' usernames
-func (config *TeamConfig) GetGithubUsers() []string {
-	users := []string{}
+// GetGithubUsers returns a map of all github users'
+func (config *TeamConfig) GetGithubUsers() map[string]User {
+	users := map[string]User{}
 	for _, user := range config.Users {
 		if user.GithubUsername != "" {
-			users = append(users, user.GithubUsername)
+			users[user.GithubUsername] = user
 		}
 	}
 	return users

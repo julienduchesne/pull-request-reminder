@@ -14,7 +14,7 @@ import (
 
 type bitbucketPullRequest struct {
 	Author struct {
-		Username string
+		UUID string
 	}
 	Description string
 	Links       map[string]struct {
@@ -25,26 +25,26 @@ type bitbucketPullRequest struct {
 		Approved bool
 		Role     string
 		User     struct {
-			Username string
+			UUID string
 		}
 	}
 	Title string
 }
 
-func (pr *bitbucketPullRequest) ToGenericPullRequest() *PullRequest {
+func (pr *bitbucketPullRequest) ToGenericPullRequest(users map[string]config.User) *PullRequest {
 	reviewers := []*Reviewer{}
 	for _, participant := range pr.Participants {
 		if participant.Role == "REVIEWER" {
 			reviewers = append(reviewers, &Reviewer{
 				Approved:         participant.Approved,
-				RequestedChanges: false, // not supported by bitbucket
-				Username:         participant.User.Username,
+				RequestedChanges: false, // not supported by bitbucket, maybe with open tasks?
+				User:             users[participant.User.UUID],
 			})
 		}
 	}
 
 	return &PullRequest{
-		Author:      pr.Author.Username,
+		Author:      users[pr.Author.UUID],
 		Description: pr.Description,
 		Link:        pr.Links["html"].Href,
 		Title:       pr.Title,
@@ -89,7 +89,7 @@ func (wrapper *bitbucketClientWrapper) GetPullRequests(owner, slug, id string) (
 
 type bitbucketCloud struct {
 	client          bitbucketClientInterface
-	users           []string
+	users           map[string]config.User
 	repositoryNames []string
 }
 
@@ -127,7 +127,7 @@ func (host *bitbucketCloud) getPullRequests(owner, repoSlug string) ([]*PullRequ
 		if err = mapstructure.Decode(response, &pullRequest); err != nil {
 			return nil, err
 		}
-		result = append(result, pullRequest.ToGenericPullRequest())
+		result = append(result, pullRequest.ToGenericPullRequest(host.users))
 	}
 
 	return result, nil
@@ -137,7 +137,7 @@ func (host *bitbucketCloud) GetName() string {
 	return "Bitbucket"
 }
 
-func (host *bitbucketCloud) GetUsers() []string {
+func (host *bitbucketCloud) GetUsers() map[string]config.User {
 	return host.users
 }
 

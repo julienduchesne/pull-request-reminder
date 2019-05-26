@@ -12,12 +12,12 @@ import (
 type Reviewer struct {
 	Approved         bool
 	RequestedChanges bool
-	Username         string
+	User             config.User
 }
 
 // PullRequest represent a pull (or merge) request on a SCM provider
 type PullRequest struct {
-	Author      string
+	Author      config.User
 	Description string
 	Link        string
 	Reviewers   []*Reviewer
@@ -25,8 +25,8 @@ type PullRequest struct {
 }
 
 // IsApproved returns true if the pull request is approved and ready to merge
-func (pr *PullRequest) IsApproved(teamUsernames []string) bool {
-	for _, reviewer := range pr.TeamReviewers(teamUsernames) {
+func (pr *PullRequest) IsApproved(team map[string]config.User) bool {
+	for _, reviewer := range pr.TeamReviewers(team) {
 		if reviewer.Approved {
 			return true
 		}
@@ -35,9 +35,9 @@ func (pr *PullRequest) IsApproved(teamUsernames []string) bool {
 }
 
 // IsFromOneOfUsers returns true if the pull request was submitted by one of the given users
-func (pr *PullRequest) IsFromOneOfUsers(teamUsernames []string) bool {
-	for _, username := range teamUsernames {
-		if pr.Author == username {
+func (pr *PullRequest) IsFromOneOfUsers(team map[string]config.User) bool {
+	for _, teamMember := range team {
+		if pr.Author.Name == teamMember.Name {
 			return true
 		}
 	}
@@ -56,11 +56,11 @@ func (pr *PullRequest) IsWIP() bool {
 }
 
 // TeamReviewers returns all the reviewers that are in the given list of usernames (the team)
-func (pr *PullRequest) TeamReviewers(teamUsernames []string) []*Reviewer {
+func (pr *PullRequest) TeamReviewers(team map[string]config.User) []*Reviewer {
 	reviewers := []*Reviewer{}
 	for _, reviewer := range pr.Reviewers {
-		for _, teamUsername := range teamUsernames {
-			if reviewer.Username == teamUsername {
+		for _, teamMember := range team {
+			if reviewer.User.Name == teamMember.Name {
 				reviewers = append(reviewers, reviewer)
 			}
 		}
@@ -131,7 +131,7 @@ func (repository *Repository) HasPullRequestsToDisplay() bool {
 type Host interface {
 	GetName() string
 	GetRepositories() []*Repository
-	GetUsers() []string
+	GetUsers() map[string]config.User
 }
 
 // GetHosts returns all configured Hosts (SCM providers)

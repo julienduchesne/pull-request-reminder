@@ -45,7 +45,7 @@ func buildSlackMessage(repositoriesNeedingAction []*hosts.Repository) []slack.Bl
 			titleBlock,
 		)
 
-		var addPullRequestSections = func(title string, pullRequests []*hosts.PullRequest) {
+		var addPullRequestSections = func(title string, linkAuthor bool, pullRequests []*hosts.PullRequest) {
 			if len(pullRequests) == 0 {
 				return
 			}
@@ -55,16 +55,20 @@ func buildSlackMessage(repositoriesNeedingAction []*hosts.Repository) []slack.Bl
 			)
 			sections = append(sections, pullRequestTitle)
 			for _, pr := range pullRequests {
+				text := fmt.Sprintf("<%v|%v>", pr.Link, pr.Title)
+				if linkAuthor {
+					text = fmt.Sprintf("@%s: %s", pr.Author.SlackUsername, text)
+				}
 				pullRequestBlock := slack.NewSectionBlock(
-					slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("<%v|%v>", pr.Link, pr.Title), false, false),
+					slack.NewTextBlockObject("mrkdwn", text, false, false),
 					nil, nil,
 				)
 				sections = append(sections, pullRequestBlock)
 			}
 		}
 
-		addPullRequestSections(":heavy_check_mark: Pull requests awaiting merge", repository.ReadyToMergePullRequests)
-		addPullRequestSections(":no_entry: Pull requests still in need of approvers", repository.ReadyToReviewPullRequests)
+		addPullRequestSections(":heavy_check_mark: Pull requests awaiting merge", true, repository.ReadyToMergePullRequests)
+		addPullRequestSections(":no_entry: Pull requests still in need of approvers", false, repository.ReadyToReviewPullRequests)
 
 	}
 

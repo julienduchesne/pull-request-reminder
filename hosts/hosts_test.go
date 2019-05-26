@@ -11,34 +11,37 @@ import (
 func TestCategorizePullRequests(t *testing.T) {
 	t.Parallel()
 
-	approvedByOtherUserPR := &PullRequest{Title: "Approved by otheruser", Author: "user1", Reviewers: []*Reviewer{
-		{Approved: true, Username: "otheruser"},
-		{Approved: false, Username: "user2"},
+	approvedByOtherUserPR := &PullRequest{Title: "Approved by otheruser", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+		{Approved: true, User: config.User{Name: "otheruser"}},
+		{Approved: false, User: config.User{Name: "user2"}},
 	}}
-	notApprovedPR := &PullRequest{Title: "Not approved", Author: "user1", Reviewers: []*Reviewer{
-		{Approved: false, Username: "user1"},
-		{Approved: false, Username: "user2"},
+	notApprovedPR := &PullRequest{Title: "Not approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+		{Approved: false, User: config.User{Name: "user1"}},
+		{Approved: false, User: config.User{Name: "user2"}},
 	}}
-	approvedPR := &PullRequest{Title: "Approved", Author: "user1", Reviewers: []*Reviewer{
-		{Approved: true, Username: "user1"},
-		{Approved: false, Username: "user2"},
+	approvedPR := &PullRequest{Title: "Approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+		{Approved: true, User: config.User{Name: "user1"}},
+		{Approved: false, User: config.User{Name: "user2"}},
 	}}
 
 	openPullRequests := []*PullRequest{
-		{Title: "User not from team", Author: "otheruser", Reviewers: []*Reviewer{
-			{Approved: false, Username: "user1"},
-			{Approved: false, Username: "user2"},
+		{Title: "User not from team", Author: config.User{Name: "otheruser"}, Reviewers: []*Reviewer{
+			{Approved: false, User: config.User{Name: "user1"}},
+			{Approved: false, User: config.User{Name: "user2"}},
 		}},
-		{Title: "[WIP] My Title", Author: "user1", Reviewers: []*Reviewer{
-			{Approved: false, Username: "user1"},
-			{Approved: false, Username: "user2"},
+		{Title: "[WIP] My Title", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+			{Approved: false, User: config.User{Name: "user1"}},
+			{Approved: false, User: config.User{Name: "user2"}},
 		}},
-		{Title: "No Reviewers", Author: "user1"},
+		{Title: "No Reviewers", Author: config.User{Name: "user1"}},
 		approvedByOtherUserPR,
 		notApprovedPR,
 		approvedPR,
 	}
-	repository := NewRepository(&bitbucketCloud{users: []string{"user1", "user2"}}, "repo-name", "http://example.com", openPullRequests)
+	repository := NewRepository(&bitbucketCloud{
+		users: map[string]config.User{"user1": {Name: "user1"}, "user2": {Name: "user2"}}},
+		"repo-name", "http://example.com",
+		openPullRequests)
 
 	assert.True(t, repository.HasPullRequestsToDisplay())
 	assert.Len(t, repository.ReadyToMergePullRequests, 1)
@@ -88,7 +91,6 @@ func TestGetHosts(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			gottenHosts := GetHosts(tt.config)
 			for _, hostType := range tt.expectedHosts {
 				hasType := false
@@ -115,8 +117,8 @@ func getTeamConfig(withBitbucket bool, withGithub bool) *config.TeamConfig {
 			Repositories: []string{"repo"},
 		}
 		teamConfig.Users = append(teamConfig.Users, config.User{
-			Name:              "John Doe2",
-			BitbucketUsername: "jdoe2",
+			Name:          "John Doe2",
+			BitbucketUUID: "{jdoe2}",
 		})
 	}
 	if withGithub {

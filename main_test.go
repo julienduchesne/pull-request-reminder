@@ -6,6 +6,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/julienduchesne/pull-request-reminder/config"
 	"github.com/julienduchesne/pull-request-reminder/hosts"
 	"github.com/julienduchesne/pull-request-reminder/messages"
 	"github.com/stretchr/testify/assert"
@@ -51,8 +52,8 @@ func (host *mockHost) GetName() string {
 	return "mock"
 }
 
-func (host *mockHost) GetUsers() []string {
-	return []string{"mock"}
+func (host *mockHost) GetUsers() map[string]config.User {
+	return map[string]config.User{"mock": {}}
 }
 
 func (host *mockHost) GetRepositories() []*hosts.Repository {

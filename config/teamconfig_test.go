@@ -10,7 +10,7 @@ func TestEmptyTeamConfig(t *testing.T) {
 	t.Parallel()
 
 	config := &TeamConfig{Users: []User{
-		{BitbucketUsername: "", GithubUsername: ""},
+		{BitbucketUUID: "", GithubUsername: ""},
 	}}
 	assert.False(t, config.IsBitbucketConfigured())
 	assert.Empty(t, config.GetBitbucketUsers())
@@ -22,9 +22,9 @@ func TestBitbucketTeamConfig(t *testing.T) {
 	t.Parallel()
 
 	config := &TeamConfig{Users: []User{
-		{BitbucketUsername: "test", GithubUsername: ""},
+		{BitbucketUUID: "{test}", GithubUsername: ""},
 	}}
-	assert.Equal(t, []string{"test"}, config.GetBitbucketUsers())
+	assert.Equal(t, map[string]User{"{test}": {BitbucketUUID: "{test}", GithubUsername: ""}}, config.GetBitbucketUsers())
 	assert.False(t, config.IsBitbucketConfigured())
 
 	config.Hosts.Bitbucket = BitbucketConfig{
@@ -39,9 +39,9 @@ func TestGithubTeamConfig(t *testing.T) {
 	t.Parallel()
 
 	config := &TeamConfig{Users: []User{
-		{BitbucketUsername: "", GithubUsername: "test"},
+		{BitbucketUUID: "", GithubUsername: "test"},
 	}}
-	assert.Equal(t, []string{"test"}, config.GetGithubUsers())
+	assert.Equal(t, map[string]User{"test": {BitbucketUUID: "", GithubUsername: "test"}}, config.GetGithubUsers())
 	assert.False(t, config.IsGithubConfigured())
 
 	config.Hosts.Github = GithubConfig{

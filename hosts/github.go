@@ -14,7 +14,7 @@ import (
 type githubHost struct {
 	client          *github.Client
 	ctx             context.Context
-	users           []string
+	users           map[string]config.User
 	repositoryNames []string
 }
 
@@ -45,7 +45,7 @@ func (host *githubHost) getPullRequests(owner, repoSlug string) ([]*PullRequest,
 
 	for _, githubPullRequest := range response {
 		pullRequest := &PullRequest{
-			Author:      *githubPullRequest.User.Login,
+			Author:      host.users[*githubPullRequest.User.Login],
 			Description: *githubPullRequest.Body,
 			Link:        *githubPullRequest.HTMLURL,
 			Title:       *githubPullRequest.Title,
@@ -68,14 +68,14 @@ func (host *githubHost) getPullRequests(owner, repoSlug string) ([]*PullRequest,
 		for i := len(allGithubReviews) - 1; i >= 0; i-- {
 			review := allGithubReviews[i]
 			reviewUser := *review.User.Login
-			if reviewUser == pullRequest.Author {
+			if reviewUser == pullRequest.Author.Name {
 				continue // Ignore reviews by author
 			}
 			if reviewer, ok := reviewerMap[reviewUser]; ok && (reviewer.Approved || reviewer.RequestedChanges) {
 				continue // Already handled
 			}
 			reviewerMap[reviewUser] = &Reviewer{
-				Username:         reviewUser,
+				User:             host.users[reviewUser],
 				Approved:         *review.State == "APPROVED",
 				RequestedChanges: *review.State == "CHANGES_REQUESTED",
 			}
@@ -95,7 +95,7 @@ func (host *githubHost) GetName() string {
 	return "Github"
 }
 
-func (host *githubHost) GetUsers() []string {
+func (host *githubHost) GetUsers() map[string]config.User {
 	return host.users
 }
 
