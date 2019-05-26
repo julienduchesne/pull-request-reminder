@@ -57,13 +57,13 @@ func (host *mockHost) GetUsers() []string {
 
 func (host *mockHost) GetRepositories() []*hosts.Repository {
 	return []*hosts.Repository{
-		&hosts.Repository{
+		{
 			Name: testRepositoryName,
 			ReadyToMergePullRequests: []*hosts.PullRequest{
-				&hosts.PullRequest{},
+				{},
 			},
 		},
-		&hosts.Repository{
+		{
 			Name: testRepositoryWithoutPRsName,
 		},
 	}

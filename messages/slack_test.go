@@ -11,19 +11,19 @@ func TestBuildSlackMessageWithSingleRepo(t *testing.T) {
 	t.Parallel()
 
 	repositories := []*hosts.Repository{
-		&hosts.Repository{Host: &mockHost{}, Name: "mock-repo", Link: "mock-repo.com",
+		{Host: &mockHost{}, Name: "mock-repo", Link: "mock-repo.com",
 			ReadyToMergePullRequests: []*hosts.PullRequest{
-				&hosts.PullRequest{
+				{
 					Title: "pr1",
 					Link:  "link1.com",
 				},
 			},
 			ReadyToReviewPullRequests: []*hosts.PullRequest{
-				&hosts.PullRequest{
+				{
 					Title: "pr2",
 					Link:  "link2.com",
 				},
-				&hosts.PullRequest{
+				{
 					Title: "pr3",
 					Link:  "link3.com",
 				},

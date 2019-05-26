@@ -12,28 +12,28 @@ func TestCategorizePullRequests(t *testing.T) {
 	t.Parallel()
 
 	approvedByOtherUserPR := &PullRequest{Title: "Approved by otheruser", Author: "user1", Reviewers: []*Reviewer{
-		&Reviewer{Approved: true, Username: "otheruser"},
-		&Reviewer{Approved: false, Username: "user2"},
+		{Approved: true, Username: "otheruser"},
+		{Approved: false, Username: "user2"},
 	}}
 	notApprovedPR := &PullRequest{Title: "Not approved", Author: "user1", Reviewers: []*Reviewer{
-		&Reviewer{Approved: false, Username: "user1"},
-		&Reviewer{Approved: false, Username: "user2"},
+		{Approved: false, Username: "user1"},
+		{Approved: false, Username: "user2"},
 	}}
 	approvedPR := &PullRequest{Title: "Approved", Author: "user1", Reviewers: []*Reviewer{
-		&Reviewer{Approved: true, Username: "user1"},
-		&Reviewer{Approved: false, Username: "user2"},
+		{Approved: true, Username: "user1"},
+		{Approved: false, Username: "user2"},
 	}}
 
 	openPullRequests := []*PullRequest{
-		&PullRequest{Title: "User not from team", Author: "otheruser", Reviewers: []*Reviewer{
-			&Reviewer{Approved: false, Username: "user1"},
-			&Reviewer{Approved: false, Username: "user2"},
+		{Title: "User not from team", Author: "otheruser", Reviewers: []*Reviewer{
+			{Approved: false, Username: "user1"},
+			{Approved: false, Username: "user2"},
 		}},
-		&PullRequest{Title: "[WIP] My Title", Author: "user1", Reviewers: []*Reviewer{
-			&Reviewer{Approved: false, Username: "user1"},
-			&Reviewer{Approved: false, Username: "user2"},
+		{Title: "[WIP] My Title", Author: "user1", Reviewers: []*Reviewer{
+			{Approved: false, Username: "user1"},
+			{Approved: false, Username: "user2"},
 		}},
-		&PullRequest{Title: "No Reviewers", Author: "user1"},
+		{Title: "No Reviewers", Author: "user1"},
 		approvedByOtherUserPR,
 		notApprovedPR,
 		approvedPR,

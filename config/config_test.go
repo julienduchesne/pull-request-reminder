@@ -112,7 +112,7 @@ func TestCreateConfigReader(t *testing.T) {
 		"PRR_CONFIG":             "s3://bucket/key",
 	} {
 		oldValue := os.Getenv(key)
-		if  oldValue != "" {
+		if oldValue != "" {
 			defer os.Setenv(key, oldValue)
 		} else {
 			defer os.Unsetenv(key)
