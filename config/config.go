@@ -34,12 +34,14 @@ type GlobalConfig struct {
 	Teams []*TeamConfig
 }
 
-type ConfigReader struct {
+// Reader represents an utility that will read the configuration from the environment as well as a config file
+type Reader struct {
 	envConfig *EnvironmentConfig
 	readFunc  func(string) (*GlobalConfig, error)
 }
 
-func NewConfigReader() (*ConfigReader, error) {
+// NewReader reads from the environment and instantiates a Reader struct
+func NewReader() (*Reader, error) {
 	envConfig := &EnvironmentConfig{}
 	if err := envconfig.Process("prr", envConfig); err != nil {
 		return nil, err
@@ -47,7 +49,7 @@ func NewConfigReader() (*ConfigReader, error) {
 	if envConfig.ConfigFilePath == "" {
 		envConfig.ConfigFilePath = defaultConfigFileName
 	}
-	configReader := &ConfigReader{envConfig: envConfig}
+	configReader := &Reader{envConfig: envConfig}
 
 	if strings.HasPrefix(envConfig.ConfigFilePath, "s3://") {
 		sess := session.Must(session.NewSessionWithOptions(session.Options{
@@ -61,7 +63,8 @@ func NewConfigReader() (*ConfigReader, error) {
 	return configReader, nil
 }
 
-func (configReader *ConfigReader) ReadConfig() (config *GlobalConfig, err error) {
+// ReadConfig reads the configuration file at the given path and injects environment variables in the read configuration (team configs)
+func (configReader *Reader) ReadConfig() (config *GlobalConfig, err error) {
 	if config, err = configReader.readFunc(configReader.envConfig.ConfigFilePath); err != nil {
 		return nil, err
 	}

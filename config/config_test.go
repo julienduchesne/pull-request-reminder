@@ -53,7 +53,7 @@ func TestReadingConfigSetsEnvironmentVariables(t *testing.T) {
 	t.Parallel()
 
 	envConfig := getTestEnvConfig("")
-	configReader := &ConfigReader{
+	configReader := &Reader{
 		envConfig: envConfig,
 		readFunc: func(string) (*GlobalConfig, error) {
 			config := &GlobalConfig{}
@@ -77,7 +77,7 @@ func TestReadFileConfig(t *testing.T) {
 
 	ioutil.WriteFile(configFileName, []byte(testGlobalConfig), 0644)
 
-	configReader := &ConfigReader{
+	configReader := &Reader{
 		envConfig: getTestEnvConfig(configFileName),
 		readFunc:  readFileConfig,
 	}
@@ -87,7 +87,7 @@ func TestReadFileConfig(t *testing.T) {
 }
 
 func TestReadS3Config(t *testing.T) {
-	configReader := &ConfigReader{
+	configReader := &Reader{
 		envConfig: getTestEnvConfig(s3Path),
 		readFunc:  getS3ConfigReadFunc(&mockedS3Client{t: t}),
 	}
@@ -97,7 +97,7 @@ func TestReadS3Config(t *testing.T) {
 }
 
 func TestCreateConfigReader(t *testing.T) {
-	configReader, err := NewConfigReader()
+	configReader, err := NewReader()
 	assert.Nil(t, err)
 	assert.Equal(t, defaultConfigFileName, configReader.envConfig.ConfigFilePath)
 	expectedFunc := runtime.FuncForPC(reflect.ValueOf(readFileConfig).Pointer()).Name()
@@ -111,10 +111,15 @@ func TestCreateConfigReader(t *testing.T) {
 		"PRR_SLACK_TOKEN":        "xoxb_test",
 		"PRR_CONFIG":             "s3://bucket/key",
 	} {
+		oldValue := os.Getenv(key)
+		if  oldValue != "" {
+			defer os.Setenv(key, oldValue)
+		} else {
+			defer os.Unsetenv(key)
+		}
 		os.Setenv(key, value)
-		defer os.Unsetenv(key)
 	}
-	configReader, err = NewConfigReader()
+	configReader, err = NewReader()
 	assert.Nil(t, err)
 	assert.Equal(t, "bb_pass", configReader.envConfig.BitbucketPassword)
 	assert.Equal(t, "bb_user", configReader.envConfig.BitbucketUsername)

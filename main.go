@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	configReader, err := config.NewConfigReader()
+	configReader, err := config.NewReader()
 	if err != nil {
 		log.Fatalf("Error while initializing the configuration reader: %v", err)
 	}
@@ -18,18 +18,27 @@ func main() {
 		log.Fatalf("Error while reading the configuration: %v", err)
 	}
 	for _, team := range config.Teams {
-		repositoriesNeedingAction := []*hosts.Repository{}
-		for _, host := range hosts.GetHosts(team) {
-			for _, repository := range host.GetRepositories() {
-				if repository.HasPullRequestsToDisplay() {
-					repositoriesNeedingAction = append(repositoriesNeedingAction, repository)
-				}
+		repositories := getRepositoriesNeedingAction(hosts.GetHosts(team))
+		handleRepositories(messages.GetHandlers(team), repositories)
+	}
+}
+
+func getRepositoriesNeedingAction(teamHosts []hosts.Host) []*hosts.Repository {
+	repositoriesNeedingAction := []*hosts.Repository{}
+	for _, host := range teamHosts {
+		for _, repository := range host.GetRepositories() {
+			if repository.HasPullRequestsToDisplay() {
+				repositoriesNeedingAction = append(repositoriesNeedingAction, repository)
 			}
 		}
-		if len(repositoriesNeedingAction) > 0 {
-			for _, handler := range messages.GetHandlers(team) {
-				handler.Notify(repositoriesNeedingAction)
-			}
+	}
+	return repositoriesNeedingAction
+}
+
+func handleRepositories(handlers []messages.MessageHandler, repositories []*hosts.Repository) {
+	if len(repositories) > 0 {
+		for _, handler := range handlers {
+			handler.Notify(repositories)
 		}
 	}
 }

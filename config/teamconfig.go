@@ -11,22 +11,26 @@ type TeamConfig struct {
 	Users     []User
 }
 
+// BitbucketConfig represents a team's bitbucket configuration
 type BitbucketConfig struct {
 	Username     string
 	Password     string
 	Repositories []string
 }
 
+// GithubConfig represents a team's github configuration
 type GithubConfig struct {
 	Repositories []string
 	Token        string
 }
 
+// SlackConfig represents a team's slack configuration
 type SlackConfig struct {
 	Channel string
 	Token   string
 }
 
+// User represents a team member's configuration
 type User struct {
 	Name              string
 	BitbucketUsername string `yaml:"bitbucket_username"`
