@@ -13,7 +13,23 @@ type slackMessageHandler struct {
 	client  *slack.Client
 }
 
-func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []*hosts.Repository) {
+func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []*hosts.Repository) error {
+	sections := buildSlackMessage(repositoriesNeedingAction)
+	if _, _, err := handler.client.PostMessage(handler.channel, slack.MsgOptionAsUser(true), slack.MsgOptionBlocks(sections...)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func newSlackMessageHandler(config *config.TeamConfig) *slackMessageHandler {
+	return &slackMessageHandler{
+		channel: config.Slack.Channel,
+		client:  slack.New(config.Slack.Token),
+	}
+}
+
+func buildSlackMessage(repositoriesNeedingAction []*hosts.Repository) []slack.Block {
 	headerText := slack.NewTextBlockObject("plain_text", "Hello, here are the pull requests requiring your attention today:", false, false)
 
 	sections := []slack.Block{slack.NewSectionBlock(headerText, nil, nil)}
@@ -51,14 +67,5 @@ func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []*hosts.Re
 
 	}
 
-	if _, _, err := handler.client.PostMessage(handler.channel, slack.MsgOptionAsUser(true), slack.MsgOptionBlocks(sections...)); err != nil {
-		panic(err)
-	}
-}
-
-func newSlackMessageHandler(config *config.TeamConfig) *slackMessageHandler {
-	return &slackMessageHandler{
-		channel: config.Slack.Channel,
-		client:  slack.New(config.Slack.Token),
-	}
+	return sections
 }

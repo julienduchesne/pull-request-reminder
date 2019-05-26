@@ -114,7 +114,7 @@ func readFileConfig(configFilePath string) (*GlobalConfig, error) {
 		return nil, fmt.Errorf("Unable to read the config file: %v", err)
 	}
 	if err = yaml.Unmarshal(yamlFile, &config); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to parse the config file: %v", err)
 	}
 	return config, nil
 }

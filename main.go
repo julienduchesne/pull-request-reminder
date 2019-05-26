@@ -19,7 +19,9 @@ func main() {
 	}
 	for _, team := range config.Teams {
 		repositories := getRepositoriesNeedingAction(hosts.GetHosts(team))
-		handleRepositories(messages.GetHandlers(team), repositories)
+		if err = handleRepositories(messages.GetHandlers(team), repositories); err != nil {
+			log.Fatalf("Error while handling messages: %v", err)
+		}
 	}
 }
 
@@ -35,10 +37,13 @@ func getRepositoriesNeedingAction(teamHosts []hosts.Host) []*hosts.Repository {
 	return repositoriesNeedingAction
 }
 
-func handleRepositories(handlers []messages.MessageHandler, repositories []*hosts.Repository) {
+func handleRepositories(handlers []messages.MessageHandler, repositories []*hosts.Repository) error {
 	if len(repositories) > 0 {
 		for _, handler := range handlers {
-			handler.Notify(repositories)
+			if err := handler.Notify(repositories); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }

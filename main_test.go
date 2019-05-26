@@ -73,6 +73,7 @@ type mockMessageHandler struct {
 	t *testing.T
 }
 
-func (handler *mockMessageHandler) Notify(repositories []*hosts.Repository) {
+func (handler *mockMessageHandler) Notify(repositories []*hosts.Repository) error {
 	assert.Equal(handler.t, testRepositoryName, repositories[0].Name)
+	return nil
 }
