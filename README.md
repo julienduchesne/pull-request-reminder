@@ -4,6 +4,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/julienduchesne/pull-request-reminder)](https://goreportcard.com/report/github.com/julienduchesne/pull-request-reminder)
 
 Open source pull request reminder
+* Grabs pull requests from the supports hosts
+* Finds out which ones still need approvals and which ones are ready to merge 
+* Posts to the configured messaging handlers (only Slack for now)
 
 ### Supported hosts
 * Github
@@ -11,6 +14,9 @@ Open source pull request reminder
 
 ### Supported message handlers
 * Slack
+    * Posts to the channel and pings the PR owner when it is ready to merge  
+    * Simply posts to the channel when the PR still needs approvers  
+![Slack](https://github.com/julienduchesne/pull-request-reminder/raw/master/slack.png)
 
 ## Configuration
 
