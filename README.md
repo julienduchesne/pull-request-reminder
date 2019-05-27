@@ -21,29 +21,33 @@ This app supports a configuration file with following format (JSON or YAML)
     "teams":[
         {
             "name":"my-team",
-            "bitbucket":{
-                "repositories":[
-                    "owner/repo1",
-                    "owner/repo2"
-                ],
-                "username":"user",
-                "password":"app_password"
+            "hosts": {
+                "bitbucket":{
+                    "repositories":[
+                        "owner/repo1",
+                        "owner/repo2"
+                    ],
+                    "username":"user",
+                    "password":"app_password"
+                },
+                "github":{
+                    "repositories":[
+                        "account/repo1",
+                        "account/repo2"
+                    ],
+                    "token":"mytoken"
+                }
             },
-            "github":{
-                "repositories":[
-                    "account/repo1",
-                    "account/repo2"
-                ],
-                "token":"mytoken"
-            },
-            "slack":{
-                "channel":"",
-                "token":"xoxb-abcd"
+            "messaging": {
+                "slack":{
+                    "channel":"",
+                    "token":"xoxb-abcd"
+                }
             },
             "users":[
                 {
                     "name":"John Doe",
-                    "bitbucket_username":"jdoe",
+                    "bitbucket_uuid":"{260ae11c-d3c9-4d9b-b1b0-54d3914b6c24}",
                     "github_username":"johndoe",
                     "slack_username":"jdoe"
                 }
@@ -65,4 +69,5 @@ You can also set the config file path with the following environment variable
 - **PRR_CONFIG**: This path can either be a path to a file on the local file system or a S3 path (s3://bucket/key)
 
 ### To run
-Simply run the executable, without any parameters
+* Run the docker image located here: https://hub.docker.com/r/julienduchesne/pull-request-reminder
+* Build the executable using `go build` and run it

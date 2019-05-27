@@ -23,7 +23,7 @@
                 {
                     "name": "John Doe",
                     "github_username": "jdoe",
-                    "bitbucket_username": "jdoe",
+                    "bitbucket_uuid": "{260ae11c-d3c9-4d9b-b1b0-54d3914b6c24}",
                     "slack_username": "jdoe"
                 }
             ]
