@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/aws/aws-sdk-go v1.19.46
 	github.com/cenkalti/backoff v2.1.1+incompatible
-	github.com/google/go-github/v25 v25.1.1
+	github.com/google/go-github/v25 v25.1.3
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/k0kubun/pp v3.0.1+incompatible // indirect
