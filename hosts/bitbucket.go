@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cenkalti/backoff"
 	"github.com/julienduchesne/pull-request-reminder/config"
@@ -16,6 +17,8 @@ type bitbucketPullRequest struct {
 	Author struct {
 		UUID string
 	}
+	CreatedOn   string `mapstructure:"created_on"`
+	UpdatedOn   string `mapstructure:"updated_on"`
 	Description string
 	Links       map[string]struct {
 		Href string
@@ -43,13 +46,23 @@ func (pr *bitbucketPullRequest) ToGenericPullRequest(users map[string]config.Use
 		}
 	}
 
-	return &PullRequest{
+	genericPullRequest := &PullRequest{
 		Author:      users[pr.Author.UUID],
 		Description: pr.Description,
 		Link:        pr.Links["html"].Href,
 		Title:       pr.Title,
 		Reviewers:   reviewers,
 	}
+
+	var err error
+	if genericPullRequest.CreateTime, err = time.Parse(time.RFC3339Nano, pr.CreatedOn); err != nil {
+		log.Warningf("Error parsing create date %s from PR %s", pr.CreatedOn, pr.Title)
+	}
+	if genericPullRequest.UpdateTime, err = time.Parse(time.RFC3339Nano, pr.UpdatedOn); err != nil {
+		log.Warningf("Error parsing update date %s from PR %s", pr.UpdatedOn, pr.Title)
+	}
+
+	return genericPullRequest
 }
 
 type bitbucketClientInterface interface {
@@ -141,8 +154,8 @@ func (host *bitbucketCloud) GetUsers() map[string]config.User {
 	return host.users
 }
 
-func (host *bitbucketCloud) GetRepositories() []*Repository {
-	repositories := []*Repository{}
+func (host *bitbucketCloud) GetRepositories() []Repository {
+	repositories := []Repository{}
 	for _, repositoryName := range host.repositoryNames {
 		splitRepository := strings.Split(repositoryName, "/")
 		owner, slug := splitRepository[0], splitRepository[1]

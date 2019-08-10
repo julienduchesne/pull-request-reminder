@@ -3,6 +3,7 @@ package hosts
 import (
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/julienduchesne/pull-request-reminder/config"
 	log "github.com/sirupsen/logrus"
@@ -22,6 +23,8 @@ type PullRequest struct {
 	Link        string
 	Reviewers   []*Reviewer
 	Title       string
+	CreateTime  time.Time
+	UpdateTime  time.Time
 }
 
 // IsApproved returns true if the pull request is approved and ready to merge
@@ -69,32 +72,47 @@ func (pr *PullRequest) TeamReviewers(team map[string]config.User) []*Reviewer {
 }
 
 // Repository represents a repository on a SCM provider
-type Repository struct {
-	Link string
+type Repository interface {
+	GetHost() Host
+	GetLink() string
+	GetName() string
+	GetPullRequestsToDisplay() (readyToMerge []*PullRequest, readyToReview []*PullRequest)
+	HasPullRequestsToDisplay() bool
+}
+
+type RepositoryImpl struct {
 	Host Host
+	Link string
 	Name string
 
-	OpenPullRequests          []*PullRequest
-	ReadyToMergePullRequests  []*PullRequest
-	ReadyToReviewPullRequests []*PullRequest
+	OpenPullRequests []*PullRequest
 }
 
 // NewRepository creates a Repository instance
-func NewRepository(host Host, name, link string, openPullRequests []*PullRequest) *Repository {
-	repository := &Repository{
-		Link:                      link,
-		Name:                      name,
-		Host:                      host,
-		OpenPullRequests:          openPullRequests,
-		ReadyToMergePullRequests:  []*PullRequest{},
-		ReadyToReviewPullRequests: []*PullRequest{},
+func NewRepository(host Host, name, link string, openPullRequests []*PullRequest) *RepositoryImpl {
+	repository := &RepositoryImpl{
+		Link:             link,
+		Name:             name,
+		Host:             host,
+		OpenPullRequests: openPullRequests,
 	}
-	repository.categorizePullRequests()
 	return repository
-
 }
 
-func (repository *Repository) categorizePullRequests() {
+func (repository *RepositoryImpl) GetHost() Host {
+	return repository.Host
+}
+
+func (repository *RepositoryImpl) GetLink() string {
+	return repository.Link
+}
+
+func (repository *RepositoryImpl) GetName() string {
+	return repository.Name
+}
+
+func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*PullRequest, readyToReview []*PullRequest) {
+	readyToMerge, readyToReview = []*PullRequest{}, []*PullRequest{}
 	for _, pullRequest := range repository.OpenPullRequests {
 
 		var logIgnoredPullRequest = func(message string) {
@@ -115,22 +133,24 @@ func (repository *Repository) categorizePullRequests() {
 		}
 
 		if pullRequest.IsApproved(repository.Host.GetUsers()) {
-			repository.ReadyToMergePullRequests = append(repository.ReadyToMergePullRequests, pullRequest)
+			readyToMerge = append(readyToMerge, pullRequest)
 		} else {
-			repository.ReadyToReviewPullRequests = append(repository.ReadyToReviewPullRequests, pullRequest)
+			readyToReview = append(readyToReview, pullRequest)
 		}
 	}
+	return
 }
 
 // HasPullRequestsToDisplay returns true if at least one of the pull requests needs action by the team (ready to merge or needs approval)
-func (repository *Repository) HasPullRequestsToDisplay() bool {
-	return len(repository.ReadyToMergePullRequests)+len(repository.ReadyToReviewPullRequests) > 0
+func (repository *RepositoryImpl) HasPullRequestsToDisplay() bool {
+	readyToMerge, readyToReview := repository.GetPullRequestsToDisplay()
+	return len(readyToMerge)+len(readyToReview) > 0
 }
 
 // Host represents a SCM provider
 type Host interface {
 	GetName() string
-	GetRepositories() []*Repository
+	GetRepositories() []Repository
 	GetUsers() map[string]config.User
 }
 

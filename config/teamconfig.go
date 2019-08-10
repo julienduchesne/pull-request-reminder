@@ -1,42 +1,45 @@
 package config
 
+import "time"
+
 // TeamConfig represents the full configuration needed to handle a team.
 // Since teams are all independent, this struct is passed to all handlers and
 // it needs to contain all the necessary information to do the whole job
 type TeamConfig struct {
-	Name  string
-	Hosts struct {
-		Bitbucket BitbucketConfig
-		Github    GithubConfig
+	Name               string        `yaml:"name"`
+	AgeBeforeNotifying time.Duration `yaml:"age_before_notifying"`
+	Hosts              struct {
+		Bitbucket BitbucketConfig `yaml:"bitbucket"`
+		Github    GithubConfig    `yaml:"github"`
 	}
 	Messaging struct {
-		Slack SlackConfig
+		Slack SlackConfig `yaml:"slack"`
 	}
-	Users []User
+	Users []User `yaml:"users"`
 }
 
 // BitbucketConfig represents a team's bitbucket configuration
 type BitbucketConfig struct {
-	Username     string
-	Password     string
-	Repositories []string
+	Username     string   `yaml:"username"`
+	Password     string   `yaml:"password"`
+	Repositories []string `yaml:"repositories"`
 }
 
 // GithubConfig represents a team's github configuration
 type GithubConfig struct {
-	Repositories []string
-	Token        string
+	Repositories []string `yaml:"repositories"`
+	Token        string   `yaml:"token"`
 }
 
 // SlackConfig represents a team's slack configuration
 type SlackConfig struct {
-	Channel string
-	Token   string
+	Channel string `yaml:"channel"`
+	Token   string `yaml:"token"`
 }
 
 // User represents a team member's configuration
 type User struct {
-	Name           string
+	Name           string `yaml:"name"`
 	BitbucketUUID  string `yaml:"bitbucket_uuid"`
 	GithubUsername string `yaml:"github_username"`
 	SlackUsername  string `yaml:"slack_username"`

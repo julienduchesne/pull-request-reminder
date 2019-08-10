@@ -8,15 +8,27 @@ import (
 	"github.com/nlopes/slack"
 )
 
-type slackMessageHandler struct {
-	channel string
-	client  *slack.Client
+type slackClient interface {
+	PostMessage(channelID string, options ...slack.MsgOption) (string, string, error)
 }
 
-func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []*hosts.Repository) error {
-	sections := buildSlackMessage(repositoriesNeedingAction)
-	if _, _, err := handler.client.PostMessage(handler.channel, slack.MsgOptionAsUser(true), slack.MsgOptionBlocks(sections...)); err != nil {
-		return err
+type slackMessageHandler struct {
+	channel string
+	client  slackClient
+}
+
+func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []hosts.Repository) error {
+	if handler.channel != "" {
+		sections := buildChannelSlackMessage(repositoriesNeedingAction)
+		if _, _, err := handler.client.PostMessage(handler.channel, slack.MsgOptionAsUser(true), slack.MsgOptionBlocks(sections...)); err != nil {
+			return err
+		}
+	}
+
+	for user, sections := range buildUserSlackMessages(repositoriesNeedingAction) {
+		if _, _, err := handler.client.PostMessage(user, slack.MsgOptionAsUser(true), slack.MsgOptionBlocks(sections...)); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -30,14 +42,14 @@ func newSlackMessageHandler(config *config.TeamConfig) *slackMessageHandler {
 	}
 }
 
-func buildSlackMessage(repositoriesNeedingAction []*hosts.Repository) []slack.Block {
+func buildChannelSlackMessage(repositoriesNeedingAction []hosts.Repository) []slack.Block {
 	headerText := slack.NewTextBlockObject("plain_text", "Hello, here are the pull requests requiring your attention today:", false, false)
 
 	sections := []slack.Block{slack.NewSectionBlock(headerText, nil, nil)}
 	for _, repository := range repositoriesNeedingAction {
 
 		titleBlock := slack.NewSectionBlock(
-			slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("[%v] *<%v|%v>*", repository.Host.GetName(), repository.Link, repository.Name), false, false),
+			slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("[%v] *<%v|%v>*", repository.GetHost().GetName(), repository.GetLink(), repository.GetName()), false, false),
 			nil, nil,
 		)
 		sections = append(sections,
@@ -67,10 +79,16 @@ func buildSlackMessage(repositoriesNeedingAction []*hosts.Repository) []slack.Bl
 			}
 		}
 
-		addPullRequestSections(":heavy_check_mark: Pull requests awaiting merge", true, repository.ReadyToMergePullRequests)
-		addPullRequestSections(":no_entry: Pull requests still in need of approvers", false, repository.ReadyToReviewPullRequests)
+		readyToMerge, readyToReview := repository.GetPullRequestsToDisplay()
+		addPullRequestSections(":heavy_check_mark: Pull requests awaiting merge", true, readyToMerge)
+		addPullRequestSections(":no_entry: Pull requests still in need of approvers", false, readyToReview)
 
 	}
 
 	return sections
+}
+
+func buildUserSlackMessages(repositoriesNeedingAction []hosts.Repository) map[string][]slack.Block {
+	messagePerUser := map[string][]slack.Block{}
+	return messagePerUser
 }

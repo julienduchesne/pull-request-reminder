@@ -6,7 +6,8 @@ import (
 	"path"
 	"testing"
 
-	"github.com/julienduchesne/pull-request-reminder/config"
+	"github.com/golang/mock/gomock"
+
 	"github.com/julienduchesne/pull-request-reminder/hosts"
 	"github.com/julienduchesne/pull-request-reminder/messages"
 	"github.com/stretchr/testify/assert"
@@ -33,48 +34,34 @@ func TestCallMainWithMinimalConfig(t *testing.T) {
 
 func TestGetRepositories(t *testing.T) {
 	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	repositories := getRepositoriesNeedingAction([]hosts.Host{&mockHost{}})
+	mockRepository := hosts.NewMockRepository(ctrl)
+	mockRepository.EXPECT().HasPullRequestsToDisplay().Return(true).AnyTimes()
+	mockRepository.EXPECT().GetName().Return(testRepositoryName).AnyTimes()
+	mockRepositoryWithoutPRs := hosts.NewMockRepository(ctrl)
+	mockRepositoryWithoutPRs.EXPECT().HasPullRequestsToDisplay().Return(false).AnyTimes()
+	mockRepositoryWithoutPRs.EXPECT().GetName().Return(testRepositoryWithoutPRsName).AnyTimes()
+
+	mockHost := hosts.NewMockHost(ctrl)
+	mockHost.EXPECT().GetRepositories().Return([]hosts.Repository{mockRepository, mockRepositoryWithoutPRs})
+
+	repositories := getRepositoriesNeedingAction([]hosts.Host{mockHost})
 	assert.Len(t, repositories, 1)
-	assert.Equal(t, testRepositoryName, repositories[0].Name)
+	assert.Equal(t, testRepositoryName, repositories[0].GetName())
 }
 
 func TestHandleRepositories(t *testing.T) {
 	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	testRepository := &hosts.Repository{Name: testRepositoryName}
-	handleRepositories([]messages.MessageHandler{&mockMessageHandler{t: t}}, []*hosts.Repository{testRepository})
-}
+	testRepository := &hosts.RepositoryImpl{Name: testRepositoryName}
+	repositories := []hosts.Repository{testRepository}
 
-type mockHost struct{}
+	mockMessageHandler := messages.NewMockMessageHandler(ctrl)
+	mockMessageHandler.EXPECT().Notify(repositories).Times(1)
 
-func (host *mockHost) GetName() string {
-	return "mock"
-}
-
-func (host *mockHost) GetUsers() map[string]config.User {
-	return map[string]config.User{"mock": {}}
-}
-
-func (host *mockHost) GetRepositories() []*hosts.Repository {
-	return []*hosts.Repository{
-		{
-			Name: testRepositoryName,
-			ReadyToMergePullRequests: []*hosts.PullRequest{
-				{},
-			},
-		},
-		{
-			Name: testRepositoryWithoutPRsName,
-		},
-	}
-}
-
-type mockMessageHandler struct {
-	t *testing.T
-}
-
-func (handler *mockMessageHandler) Notify(repositories []*hosts.Repository) error {
-	assert.Equal(handler.t, testRepositoryName, repositories[0].Name)
-	return nil
+	handleRepositories([]messages.MessageHandler{mockMessageHandler}, repositories)
 }

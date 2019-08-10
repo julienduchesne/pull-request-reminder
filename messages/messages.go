@@ -8,7 +8,7 @@ import (
 // MessageHandler is the interface that wraps the Notify method.
 // This method sends a message concerning the pull requests to a messaging provider
 type MessageHandler interface {
-	Notify([]*hosts.Repository) error
+	Notify([]hosts.Repository) error
 }
 
 // GetHandlers returns all available and configured MessageHandler instances

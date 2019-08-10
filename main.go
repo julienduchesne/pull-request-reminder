@@ -25,8 +25,8 @@ func main() {
 	}
 }
 
-func getRepositoriesNeedingAction(teamHosts []hosts.Host) []*hosts.Repository {
-	repositoriesNeedingAction := []*hosts.Repository{}
+func getRepositoriesNeedingAction(teamHosts []hosts.Host) []hosts.Repository {
+	repositoriesNeedingAction := []hosts.Repository{}
 	for _, host := range teamHosts {
 		for _, repository := range host.GetRepositories() {
 			if repository.HasPullRequestsToDisplay() {
@@ -37,7 +37,7 @@ func getRepositoriesNeedingAction(teamHosts []hosts.Host) []*hosts.Repository {
 	return repositoriesNeedingAction
 }
 
-func handleRepositories(handlers []messages.MessageHandler, repositories []*hosts.Repository) error {
+func handleRepositories(handlers []messages.MessageHandler, repositories []hosts.Repository) error {
 	if len(repositories) > 0 {
 		for _, handler := range handlers {
 			if err := handler.Notify(repositories); err != nil {

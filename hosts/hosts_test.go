@@ -44,12 +44,13 @@ func TestCategorizePullRequests(t *testing.T) {
 		openPullRequests)
 
 	assert.True(t, repository.HasPullRequestsToDisplay())
-	assert.Len(t, repository.ReadyToMergePullRequests, 1)
-	assert.Contains(t, repository.ReadyToMergePullRequests, approvedPR)
+	readyToMerge, readyToReview := repository.GetPullRequestsToDisplay()
+	assert.Len(t, readyToMerge, 1)
+	assert.Contains(t, readyToMerge, approvedPR)
 
-	assert.Len(t, repository.ReadyToReviewPullRequests, 2)
-	assert.Contains(t, repository.ReadyToReviewPullRequests, notApprovedPR)
-	assert.Contains(t, repository.ReadyToReviewPullRequests, approvedByOtherUserPR)
+	assert.Len(t, readyToReview, 2)
+	assert.Contains(t, readyToReview, notApprovedPR)
+	assert.Contains(t, readyToReview, approvedByOtherUserPR)
 }
 
 func TestGetHosts(t *testing.T) {

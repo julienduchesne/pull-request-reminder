@@ -2,6 +2,7 @@ package hosts
 
 import (
 	"testing"
+	"time"
 
 	"github.com/julienduchesne/pull-request-reminder/config"
 
@@ -35,9 +36,13 @@ var testGetPullRequestResponse = map[string]interface{}{
 			},
 		},
 	},
+	"created_on": "2019-08-08T17:21:52.698243+00:00",
+	"updated_on": "2019-08-08T21:12:11.405493+00:00",
 }
 
 func TestGetBitbucketRepositories(t *testing.T) {
+	utc, _ := time.LoadLocation("UTC")
+
 	host := &bitbucketCloud{
 		client:          &mockBitbucketClient{},
 		repositoryNames: []string{"jdoe/test"},
@@ -49,7 +54,7 @@ func TestGetBitbucketRepositories(t *testing.T) {
 	}
 	repositories := host.GetRepositories()
 	assert.Len(t, repositories, 1)
-	repository := repositories[0]
+	repository := repositories[0].(*RepositoryImpl)
 	assert.Equal(t, "jdoe/test", repository.Name)
 	assert.Equal(t, "https://bitbucket.org/jdoe/test", repository.Link)
 	assert.Equal(t, host, repository.Host)
@@ -60,6 +65,8 @@ func TestGetBitbucketRepositories(t *testing.T) {
 	assert.Equal(t, "My Description", pullRequest.Description)
 	assert.Equal(t, "pr.com", pullRequest.Link)
 	assert.Equal(t, "My Pull Request", pullRequest.Title)
+	assert.Equal(t, time.Date(2019, time.August, 8, 17, 21, 52, 698243000, utc).UTC(), pullRequest.CreateTime.UTC())
+	assert.Equal(t, time.Date(2019, time.August, 8, 21, 12, 11, 405493000, utc).UTC(), pullRequest.UpdateTime.UTC())
 
 	assert.Len(t, pullRequest.Reviewers, 1)
 	reviewer := pullRequest.Reviewers[0]

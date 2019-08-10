@@ -50,6 +50,8 @@ func (host *githubHost) getPullRequests(owner, repoSlug string) ([]*PullRequest,
 			Link:        *githubPullRequest.HTMLURL,
 			Title:       *githubPullRequest.Title,
 			Reviewers:   []*Reviewer{},
+			CreateTime:  *githubPullRequest.CreatedAt,
+			UpdateTime:  *githubPullRequest.UpdatedAt,
 		}
 
 		allGithubReviews := []*github.PullRequestReview{}
@@ -99,8 +101,8 @@ func (host *githubHost) GetUsers() map[string]config.User {
 	return host.users
 }
 
-func (host *githubHost) GetRepositories() []*Repository {
-	repositories := []*Repository{}
+func (host *githubHost) GetRepositories() []Repository {
+	repositories := []Repository{}
 	for _, repositoryName := range host.repositoryNames {
 		splitRepository := strings.Split(repositoryName, "/")
 		owner, slug := splitRepository[0], splitRepository[1]
