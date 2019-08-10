@@ -3,6 +3,7 @@ package hosts
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/julienduchesne/pull-request-reminder/config"
 	"github.com/stretchr/testify/assert"
@@ -11,6 +12,10 @@ import (
 func TestCategorizePullRequests(t *testing.T) {
 	t.Parallel()
 
+	validAge, _ := time.ParseDuration("36h")
+	invalidAge, _ := time.ParseDuration("12h")
+	maxAge, _ := time.ParseDuration("24h")
+
 	approvedByOtherUserPR := &PullRequest{Title: "Approved by otheruser", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
 		{Approved: true, User: config.User{Name: "otheruser"}},
 		{Approved: false, User: config.User{Name: "user2"}},
@@ -18,7 +23,15 @@ func TestCategorizePullRequests(t *testing.T) {
 	notApprovedPR := &PullRequest{Title: "Not approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
 		{Approved: false, User: config.User{Name: "user1"}},
 		{Approved: false, User: config.User{Name: "user2"}},
-	}}
+	},
+		CreateTime: time.Now().Add(-validAge),
+	}
+	notApprovedPRButTooYoung := &PullRequest{Title: "Not approved but too young", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+		{Approved: false, User: config.User{Name: "user1"}},
+		{Approved: false, User: config.User{Name: "user2"}},
+	},
+		CreateTime: time.Now().Add(-invalidAge),
+	}
 	approvedPR := &PullRequest{Title: "Approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
 		{Approved: true, User: config.User{Name: "user1"}},
 		{Approved: false, User: config.User{Name: "user2"}},
@@ -34,12 +47,21 @@ func TestCategorizePullRequests(t *testing.T) {
 			{Approved: false, User: config.User{Name: "user2"}},
 		}},
 		{Title: "No Reviewers", Author: config.User{Name: "user1"}},
+		notApprovedPRButTooYoung,
 		approvedByOtherUserPR,
 		notApprovedPR,
 		approvedPR,
 	}
+
 	repository := NewRepository(&bitbucketCloud{
-		users: map[string]config.User{"user1": {Name: "user1"}, "user2": {Name: "user2"}}},
+		config: &config.TeamConfig{
+			AgeBeforeNotifying: maxAge,
+			Users: []config.User{
+				{Name: "user1", BitbucketUUID: "user1"},
+				{Name: "user2", BitbucketUUID: "user2"},
+			},
+		},
+	},
 		"repo-name", "http://example.com",
 		openPullRequests)
 

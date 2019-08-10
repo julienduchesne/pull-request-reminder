@@ -46,10 +46,12 @@ func TestGetBitbucketRepositories(t *testing.T) {
 	host := &bitbucketCloud{
 		client:          &mockBitbucketClient{},
 		repositoryNames: []string{"jdoe/test"},
-		users: map[string]config.User{
-			"{jdoe}":  {Name: "John Doe"},
-			"{jdoe2}": {Name: "John Doe2"},
-			"{jdoe3}": {Name: "John Doe3"},
+		config: &config.TeamConfig{
+			Users: []config.User{
+				{Name: "John Doe", BitbucketUUID: "{jdoe}"},
+				{Name: "John Doe2", BitbucketUUID: "{jdoe2}"},
+				{Name: "John Doe3", BitbucketUUID: "{jdoe3}"},
+			},
 		},
 	}
 	repositories := host.GetRepositories()
@@ -61,7 +63,7 @@ func TestGetBitbucketRepositories(t *testing.T) {
 
 	assert.Len(t, repository.OpenPullRequests, 1)
 	pullRequest := repository.OpenPullRequests[0]
-	assert.Equal(t, config.User{Name: "John Doe2"}, pullRequest.Author)
+	assert.Equal(t, "John Doe2", pullRequest.Author.Name)
 	assert.Equal(t, "My Description", pullRequest.Description)
 	assert.Equal(t, "pr.com", pullRequest.Link)
 	assert.Equal(t, "My Pull Request", pullRequest.Title)
@@ -72,7 +74,7 @@ func TestGetBitbucketRepositories(t *testing.T) {
 	reviewer := pullRequest.Reviewers[0]
 	assert.False(t, reviewer.Approved)
 	assert.False(t, reviewer.RequestedChanges)
-	assert.Equal(t, config.User{Name: "John Doe3"}, reviewer.User)
+	assert.Equal(t, "John Doe3", reviewer.User.Name)
 }
 
 type mockBitbucketClient struct{}

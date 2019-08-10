@@ -27,6 +27,7 @@ This app supports a configuration file with following format (JSON or YAML)
     "teams":[
         {
             "name":"my-team",
+            "age_before_notifying": "24h",
             "hosts": {
                 "bitbucket":{
                     "repositories":[

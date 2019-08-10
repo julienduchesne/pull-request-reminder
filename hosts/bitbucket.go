@@ -101,17 +101,17 @@ func (wrapper *bitbucketClientWrapper) GetPullRequests(owner, slug, id string) (
 }
 
 type bitbucketCloud struct {
+	config          *config.TeamConfig
 	client          bitbucketClientInterface
-	users           map[string]config.User
 	repositoryNames []string
 }
 
 func newBitbucketCloud(config *config.TeamConfig) *bitbucketCloud {
 	bitbucketConfig := config.Hosts.Bitbucket
 	return &bitbucketCloud{
+		config:          config,
 		client:          newBitbucketClientWrapper(bitbucketConfig),
 		repositoryNames: bitbucketConfig.Repositories,
-		users:           config.GetBitbucketUsers(),
 	}
 
 }
@@ -140,10 +140,14 @@ func (host *bitbucketCloud) getPullRequests(owner, repoSlug string) ([]*PullRequ
 		if err = mapstructure.Decode(response, &pullRequest); err != nil {
 			return nil, err
 		}
-		result = append(result, pullRequest.ToGenericPullRequest(host.users))
+		result = append(result, pullRequest.ToGenericPullRequest(host.GetUsers()))
 	}
 
 	return result, nil
+}
+
+func (host *bitbucketCloud) GetConfig() *config.TeamConfig {
+	return host.config
 }
 
 func (host *bitbucketCloud) GetName() string {
@@ -151,7 +155,7 @@ func (host *bitbucketCloud) GetName() string {
 }
 
 func (host *bitbucketCloud) GetUsers() map[string]config.User {
-	return host.users
+	return host.config.GetBitbucketUsers()
 }
 
 func (host *bitbucketCloud) GetRepositories() []Repository {

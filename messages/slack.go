@@ -68,7 +68,7 @@ func buildChannelSlackMessage(repositoriesNeedingAction []hosts.Repository) []sl
 			sections = append(sections, pullRequestTitle)
 			for _, pr := range pullRequests {
 				text := fmt.Sprintf("<%v|%v>", pr.Link, pr.Title)
-				if linkAuthor {
+				if linkAuthor && pr.Author.SlackUsername != "" {
 					text = fmt.Sprintf("@%s: %s", pr.Author.SlackUsername, text)
 				}
 				pullRequestBlock := slack.NewSectionBlock(

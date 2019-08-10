@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBuildSlackMessageWithSingleRepo(t *testing.T) {
+func TestBuildChannelSlackMessageWithSingleRepo(t *testing.T) {
 	t.Parallel()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -46,11 +46,15 @@ func TestBuildSlackMessageWithSingleRepo(t *testing.T) {
 	// 1. Main Title
 	assert.Equal(t, "Hello, here are the pull requests requiring your attention today:", sections[0].(*slack.SectionBlock).Text.Text)
 	// 2. Divider
+	assert.IsType(t, sections[1], &slack.DividerBlock{})
 	// 3. Repository Title
+	assert.Equal(t, "[mock] *<mock-repo.com|mock-repo>*", sections[2].(*slack.SectionBlock).Text.Text)
 	// 4. PRs waiting for review Title
-	// 5. PR 2
-	// 6. PR 3
-	// 7. Ready to Merge Title
-	// 8. PR1
+	assert.Equal(t, ":heavy_check_mark: Pull requests awaiting merge", sections[3].(*slack.SectionBlock).Text.Text)
+	assert.Equal(t, "<link1.com|pr1>", sections[4].(*slack.SectionBlock).Text.Text)
+	// 5. Ready to Merge Title
+	assert.Equal(t, ":no_entry: Pull requests still in need of approvers", sections[5].(*slack.SectionBlock).Text.Text)
+	assert.Equal(t, "<link2.com|pr2>", sections[6].(*slack.SectionBlock).Text.Text)
+	assert.Equal(t, "<link3.com|pr3>", sections[7].(*slack.SectionBlock).Text.Text)
 
 }

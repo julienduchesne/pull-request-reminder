@@ -1,6 +1,7 @@
 package hosts
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -80,6 +81,7 @@ type Repository interface {
 	HasPullRequestsToDisplay() bool
 }
 
+// RepositoryImpl is the implementation of the Repository interface.
 type RepositoryImpl struct {
 	Host Host
 	Link string
@@ -88,7 +90,7 @@ type RepositoryImpl struct {
 	OpenPullRequests []*PullRequest
 }
 
-// NewRepository creates a Repository instance
+// NewRepository creates a RepositoryImpl instance
 func NewRepository(host Host, name, link string, openPullRequests []*PullRequest) *RepositoryImpl {
 	repository := &RepositoryImpl{
 		Link:             link,
@@ -99,19 +101,25 @@ func NewRepository(host Host, name, link string, openPullRequests []*PullRequest
 	return repository
 }
 
+// GetHost returns a repository's host
 func (repository *RepositoryImpl) GetHost() Host {
 	return repository.Host
 }
 
+// GetLink returns a repository's URL
 func (repository *RepositoryImpl) GetLink() string {
 	return repository.Link
 }
 
+// GetName returns a repository's name
 func (repository *RepositoryImpl) GetName() string {
 	return repository.Name
 }
 
+// GetPullRequestsToDisplay returns all pull requests that are either waiting for approvals or ready to merge
 func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*PullRequest, readyToReview []*PullRequest) {
+	config := repository.GetHost().GetConfig()
+
 	readyToMerge, readyToReview = []*PullRequest{}, []*PullRequest{}
 	for _, pullRequest := range repository.OpenPullRequests {
 
@@ -129,6 +137,10 @@ func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*Pu
 		}
 		if len(pullRequest.TeamReviewers(repository.Host.GetUsers())) == 0 {
 			logIgnoredPullRequest("No reviewers")
+			continue
+		}
+		if pullRequest.CreateTime.After(time.Now().Add(-config.AgeBeforeNotifying)) {
+			logIgnoredPullRequest(fmt.Sprintf("Not older created for %v", config.AgeBeforeNotifying))
 			continue
 		}
 
@@ -149,6 +161,7 @@ func (repository *RepositoryImpl) HasPullRequestsToDisplay() bool {
 
 // Host represents a SCM provider
 type Host interface {
+	GetConfig() *config.TeamConfig
 	GetName() string
 	GetRepositories() []Repository
 	GetUsers() map[string]config.User

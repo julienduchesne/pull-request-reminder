@@ -127,6 +127,20 @@ func (m *MockHost) EXPECT() *MockHostMockRecorder {
 	return m.recorder
 }
 
+// GetConfig mocks base method
+func (m *MockHost) GetConfig() *config.TeamConfig {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfig")
+	ret0, _ := ret[0].(*config.TeamConfig)
+	return ret0
+}
+
+// GetConfig indicates an expected call of GetConfig
+func (mr *MockHostMockRecorder) GetConfig() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockHost)(nil).GetConfig))
+}
+
 // GetName mocks base method
 func (m *MockHost) GetName() string {
 	m.ctrl.T.Helper()
