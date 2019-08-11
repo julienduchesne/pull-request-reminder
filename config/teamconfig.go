@@ -1,6 +1,8 @@
 package config
 
-import "time"
+import (
+	"time"
+)
 
 // TeamConfig represents the full configuration needed to handle a team.
 // Since teams are all independent, this struct is passed to all handlers and
@@ -8,6 +10,7 @@ import "time"
 type TeamConfig struct {
 	Name               string        `yaml:"name"`
 	AgeBeforeNotifying time.Duration `yaml:"age_before_notifying"`
+	NumberOfApprovals  int           `yaml:"number_of_approvals"`
 	Hosts              struct {
 		Bitbucket BitbucketConfig `yaml:"bitbucket"`
 		Github    GithubConfig    `yaml:"github"`
@@ -43,6 +46,13 @@ type User struct {
 	BitbucketUUID  string `yaml:"bitbucket_uuid"`
 	GithubUsername string `yaml:"github_username"`
 	SlackUsername  string `yaml:"slack_username"`
+}
+
+func (config *TeamConfig) GetNumberOfNeededApprovals() int {
+	if config.NumberOfApprovals <= 0 {
+		return 1
+	}
+	return config.NumberOfApprovals
 }
 
 // GetBitbucketUsers returns a map of all bitbucket users'

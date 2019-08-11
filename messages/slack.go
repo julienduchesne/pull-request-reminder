@@ -8,6 +8,8 @@ import (
 	"github.com/nlopes/slack"
 )
 
+const headerText = "Hello, here are the pull requests requiring your attention today:"
+
 type slackClient interface {
 	PostMessage(channelID string, options ...slack.MsgOption) (string, string, error)
 }
@@ -43,9 +45,9 @@ func newSlackMessageHandler(config *config.TeamConfig) *slackMessageHandler {
 }
 
 func buildChannelSlackMessage(repositoriesNeedingAction []hosts.Repository) []slack.Block {
-	headerText := slack.NewTextBlockObject("plain_text", "Hello, here are the pull requests requiring your attention today:", false, false)
+	headerTextBlock := slack.NewTextBlockObject("plain_text", headerText, false, false)
 
-	sections := []slack.Block{slack.NewSectionBlock(headerText, nil, nil)}
+	sections := []slack.Block{slack.NewSectionBlock(headerTextBlock, nil, nil)}
 	for _, repository := range repositoriesNeedingAction {
 
 		titleBlock := slack.NewSectionBlock(

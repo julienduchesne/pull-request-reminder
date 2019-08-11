@@ -29,13 +29,14 @@ type PullRequest struct {
 }
 
 // IsApproved returns true if the pull request is approved and ready to merge
-func (pr *PullRequest) IsApproved(team map[string]config.User) bool {
+func (pr *PullRequest) IsApproved(team map[string]config.User, numberOfApprovals int) bool {
+	approvalsGotten := 0
 	for _, reviewer := range pr.TeamReviewers(team) {
 		if reviewer.Approved {
-			return true
+			approvalsGotten++
 		}
 	}
-	return false
+	return approvalsGotten >= numberOfApprovals
 }
 
 // IsFromOneOfUsers returns true if the pull request was submitted by one of the given users
@@ -144,7 +145,7 @@ func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*Pu
 			continue
 		}
 
-		if pullRequest.IsApproved(repository.Host.GetUsers()) {
+		if pullRequest.IsApproved(repository.Host.GetUsers(), config.GetNumberOfNeededApprovals()) {
 			readyToMerge = append(readyToMerge, pullRequest)
 		} else {
 			readyToReview = append(readyToReview, pullRequest)

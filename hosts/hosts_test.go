@@ -9,70 +9,122 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCategorizePullRequests(t *testing.T) {
+func TestGetPullRequestsToDisplay(t *testing.T) {
 	t.Parallel()
 
 	validAge, _ := time.ParseDuration("36h")
 	invalidAge, _ := time.ParseDuration("12h")
 	maxAge, _ := time.ParseDuration("24h")
 
-	approvedByOtherUserPR := &PullRequest{Title: "Approved by otheruser", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
-		{Approved: true, User: config.User{Name: "otheruser"}},
-		{Approved: false, User: config.User{Name: "user2"}},
-	}}
-	notApprovedPR := &PullRequest{Title: "Not approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
-		{Approved: false, User: config.User{Name: "user1"}},
-		{Approved: false, User: config.User{Name: "user2"}},
-	},
-		CreateTime: time.Now().Add(-validAge),
-	}
-	notApprovedPRButTooYoung := &PullRequest{Title: "Not approved but too young", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
-		{Approved: false, User: config.User{Name: "user1"}},
-		{Approved: false, User: config.User{Name: "user2"}},
-	},
-		CreateTime: time.Now().Add(-invalidAge),
-	}
-	approvedPR := &PullRequest{Title: "Approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
-		{Approved: true, User: config.User{Name: "user1"}},
-		{Approved: false, User: config.User{Name: "user2"}},
-	}}
-
-	openPullRequests := []*PullRequest{
-		{Title: "User not from team", Author: config.User{Name: "otheruser"}, Reviewers: []*Reviewer{
-			{Approved: false, User: config.User{Name: "user1"}},
-			{Approved: false, User: config.User{Name: "user2"}},
-		}},
-		{Title: "[WIP] My Title", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
-			{Approved: false, User: config.User{Name: "user1"}},
-			{Approved: false, User: config.User{Name: "user2"}},
-		}},
-		{Title: "No Reviewers", Author: config.User{Name: "user1"}},
-		notApprovedPRButTooYoung,
-		approvedByOtherUserPR,
-		notApprovedPR,
-		approvedPR,
-	}
-
-	repository := NewRepository(&bitbucketCloud{
-		config: &config.TeamConfig{
-			AgeBeforeNotifying: maxAge,
-			Users: []config.User{
-				{Name: "user1", BitbucketUUID: "user1"},
-				{Name: "user2", BitbucketUUID: "user2"},
+	cases := []struct {
+		name                    string
+		pullRequest             *PullRequest
+		readyToMerge            bool
+		readyToReview           bool
+		numberOfNeededApprovals int
+	}{
+		{
+			name: "Not Approved PR",
+			pullRequest: &PullRequest{Title: "Not approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+				{Approved: false, User: config.User{Name: "user1"}},
+				{Approved: false, User: config.User{Name: "user2"}},
 			},
+				CreateTime: time.Now().Add(-validAge),
+			},
+			readyToMerge:  false,
+			readyToReview: true,
 		},
-	},
-		"repo-name", "http://example.com",
-		openPullRequests)
+		{
+			name: "Approved by other user (not in team)",
+			pullRequest: &PullRequest{Title: "Approved by otheruser", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+				{Approved: true, User: config.User{Name: "otheruser"}},
+				{Approved: false, User: config.User{Name: "user2"}},
+			}},
+			readyToMerge:  false,
+			readyToReview: true,
+		},
+		{
+			name: "Approved PR",
+			pullRequest: &PullRequest{Title: "Approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+				{Approved: true, User: config.User{Name: "user1"}},
+				{Approved: false, User: config.User{Name: "user2"}},
+			}},
+			readyToMerge:  true,
+			readyToReview: false,
+		},
+		{
+			name: "Author not from team",
+			pullRequest: &PullRequest{Title: "User not from team", Author: config.User{Name: "otheruser"}, Reviewers: []*Reviewer{
+				{Approved: false, User: config.User{Name: "user1"}},
+				{Approved: false, User: config.User{Name: "user2"}},
+			}},
+			readyToMerge:  false,
+			readyToReview: false,
+		},
+		{
+			name: "Work in progress",
+			pullRequest: &PullRequest{Title: "[WIP] My Title", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+				{Approved: false, User: config.User{Name: "user1"}},
+				{Approved: false, User: config.User{Name: "user2"}},
+			}},
+			readyToMerge:  false,
+			readyToReview: false,
+		},
+		{
+			name:          "No Reviewers",
+			pullRequest:   &PullRequest{Title: "No Reviewers", Author: config.User{Name: "user1"}},
+			readyToMerge:  false,
+			readyToReview: false,
+		},
+		{
+			name: "Not created long enough ago",
+			pullRequest: &PullRequest{Title: "Not approved but too young", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+				{Approved: false, User: config.User{Name: "user1"}},
+				{Approved: false, User: config.User{Name: "user2"}},
+			},
+				CreateTime: time.Now().Add(-invalidAge),
+			},
+			readyToMerge:  false,
+			readyToReview: false,
+		},
+		{
+			name: "Not enough approvals",
+			pullRequest: &PullRequest{Title: "Approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+				{Approved: true, User: config.User{Name: "user1"}},
+				{Approved: false, User: config.User{Name: "user2"}},
+			}},
+			readyToMerge:            false,
+			readyToReview:           true,
+			numberOfNeededApprovals: 2,
+		},
+	}
 
-	assert.True(t, repository.HasPullRequestsToDisplay())
-	readyToMerge, readyToReview := repository.GetPullRequestsToDisplay()
-	assert.Len(t, readyToMerge, 1)
-	assert.Contains(t, readyToMerge, approvedPR)
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			repository := NewRepository(&bitbucketCloud{
+				config: &config.TeamConfig{
+					AgeBeforeNotifying: maxAge,
+					NumberOfApprovals:  tt.numberOfNeededApprovals,
+					Users: []config.User{
+						{Name: "user1", BitbucketUUID: "user1"},
+						{Name: "user2", BitbucketUUID: "user2"},
+					},
+				},
+			},
+				"repo-name", "http://example.com",
+				[]*PullRequest{tt.pullRequest})
+			if tt.readyToMerge || tt.readyToReview {
+				assert.True(t, repository.HasPullRequestsToDisplay())
+			}
 
-	assert.Len(t, readyToReview, 2)
-	assert.Contains(t, readyToReview, notApprovedPR)
-	assert.Contains(t, readyToReview, approvedByOtherUserPR)
+			readyToMerge, readyToReview := repository.GetPullRequestsToDisplay()
+			assert.Equal(t, tt.readyToMerge, len(readyToMerge) == 1, "The pull request should or should not have been ready to merge")
+			assert.Equal(t, tt.readyToReview, len(readyToReview) == 1, "The pull request should or should not have been ready to review")
+
+			assert.Equal(t, "repo-name", repository.GetName())
+			assert.Equal(t, "http://example.com", repository.GetLink())
+		})
+	}
 }
 
 func TestGetHosts(t *testing.T) {
