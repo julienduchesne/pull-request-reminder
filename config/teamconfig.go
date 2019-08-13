@@ -36,8 +36,9 @@ type GithubConfig struct {
 
 // SlackConfig represents a team's slack configuration
 type SlackConfig struct {
-	Channel string `yaml:"channel"`
-	Token   string `yaml:"token"`
+	Channel                  string `yaml:"channel"`
+	MessageUsersIndividually bool   `yaml:"message_users_individually"`
+	Token                    string `yaml:"token"`
 }
 
 // User represents a team member's configuration
