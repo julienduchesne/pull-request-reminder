@@ -88,6 +88,17 @@ func TestGetPullRequestsToDisplay(t *testing.T) {
 			readyToReview: false,
 		},
 		{
+			name: "Not approved long enough ago (have to wait 24h after update before annoying with merge notification)",
+			pullRequest: &PullRequest{Title: "Approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
+				{Approved: true, User: config.User{Name: "user1"}},
+				{Approved: false, User: config.User{Name: "user2"}},
+			},
+				UpdateTime: time.Now().Add(-invalidAge),
+			},
+			readyToMerge:  false,
+			readyToReview: false,
+		},
+		{
 			name: "Not enough approvals",
 			pullRequest: &PullRequest{Title: "Approved", Author: config.User{Name: "user1"}, Reviewers: []*Reviewer{
 				{Approved: true, User: config.User{Name: "user1"}},

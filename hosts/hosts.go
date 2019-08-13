@@ -141,11 +141,15 @@ func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*Pu
 			continue
 		}
 		if pullRequest.CreateTime.After(time.Now().Add(-config.AgeBeforeNotifying)) {
-			logIgnoredPullRequest(fmt.Sprintf("Not older created for %v", config.AgeBeforeNotifying))
+			logIgnoredPullRequest(fmt.Sprintf("Not old enough. It hasn't been created for %v", config.AgeBeforeNotifying))
 			continue
 		}
 
 		if pullRequest.IsApproved(repository.Host.GetUsers(), config.GetNumberOfNeededApprovals()) {
+			if pullRequest.UpdateTime.After(time.Now().Add(-config.AgeBeforeNotifying)) {
+				logIgnoredPullRequest(fmt.Sprintf("Merge not overdue, hasn't been stale for %v", config.AgeBeforeNotifying))
+				continue
+			}
 			readyToMerge = append(readyToMerge, pullRequest)
 		} else {
 			readyToReview = append(readyToReview, pullRequest)
