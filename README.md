@@ -28,6 +28,7 @@ This app supports a configuration file with following format (JSON or YAML)
         {
             "name":"my-team",
             "age_before_notifying": "24h",
+            "number_of_approvals": 1,
             "hosts": {
                 "bitbucket":{
                     "repositories":[
@@ -47,7 +48,9 @@ This app supports a configuration file with following format (JSON or YAML)
             },
             "messaging": {
                 "slack":{
-                    "channel":"",
+                    "message_users_individually": true,
+                    // or
+                    "channel": "#my_channel",
                     "token":"xoxb-abcd"
                 }
             },
@@ -56,7 +59,7 @@ This app supports a configuration file with following format (JSON or YAML)
                     "name":"John Doe",
                     "bitbucket_uuid":"{260ae11c-d3c9-4d9b-b1b0-54d3914b6c24}",
                     "github_username":"johndoe",
-                    "slack_username":"jdoe"
+                    "slack_username":"@jdoe"
                 }
             ]
         }

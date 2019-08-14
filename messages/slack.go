@@ -147,7 +147,7 @@ func getPullRequestSections(title string, linkAuthor bool, pullRequests []*hosts
 	for _, pr := range pullRequests {
 		text := fmt.Sprintf("<%v|%v>", pr.Link, pr.Title)
 		if linkAuthor && pr.Author.SlackUsername != "" {
-			text = fmt.Sprintf("@%s: %s", pr.Author.SlackUsername, text)
+			text = fmt.Sprintf("%s: %s", pr.Author.SlackUsername, text)
 		}
 		pullRequestBlock := slack.NewSectionBlock(
 			slack.NewTextBlockObject("mrkdwn", text, false, false),
