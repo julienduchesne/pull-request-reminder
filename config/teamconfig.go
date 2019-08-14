@@ -39,6 +39,8 @@ type SlackConfig struct {
 	Channel                  string `yaml:"channel"`
 	MessageUsersIndividually bool   `yaml:"message_users_individually"`
 	Token                    string `yaml:"token"`
+
+	DebugUser string `yaml:"debug_user"`
 }
 
 // User represents a team member's configuration

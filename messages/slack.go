@@ -18,6 +18,8 @@ type slackMessageHandler struct {
 	channel      string
 	messageUsers bool
 	client       slackClient
+
+	debugUser string
 }
 
 func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []hosts.Repository) error {
@@ -30,6 +32,13 @@ func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []hosts.Rep
 
 	if handler.messageUsers {
 		for user, sections := range buildUserSlackMessages(repositoriesNeedingAction) {
+			if handler.debugUser != "" {
+				sections = append([]slack.Block{
+					slack.NewDividerBlock(),
+					slack.NewSectionBlock(slack.NewTextBlockObject("plain_text", fmt.Sprintf("Would've sent to %s", user), false, false), nil, nil),
+				}, sections...)
+				user = handler.debugUser
+			}
 			if _, _, err := handler.client.PostMessage(user, slack.MsgOptionAsUser(true), slack.MsgOptionBlocks(sections...)); err != nil {
 				return err
 			}
@@ -43,6 +52,7 @@ func newSlackMessageHandler(config *config.TeamConfig) *slackMessageHandler {
 	slackConfig := config.Messaging.Slack
 	return &slackMessageHandler{
 		channel:      slackConfig.Channel,
+		debugUser:    slackConfig.DebugUser,
 		messageUsers: slackConfig.MessageUsersIndividually,
 		client:       slack.New(slackConfig.Token),
 	}
