@@ -8,10 +8,11 @@ import (
 // Since teams are all independent, this struct is passed to all handlers and
 // it needs to contain all the necessary information to do the whole job
 type TeamConfig struct {
-	Name               string        `yaml:"name"`
-	AgeBeforeNotifying time.Duration `yaml:"age_before_notifying"`
-	NumberOfApprovals  int           `yaml:"number_of_approvals"`
-	Hosts              struct {
+	Name                    string        `yaml:"name"`
+	AgeBeforeNotifying      time.Duration `yaml:"age_before_notifying"`
+	NumberOfApprovals       int           `yaml:"number_of_approvals"`
+	ReviewPRsFromNonMembers bool          `yaml:"review_pr_from_non_members"`
+	Hosts                   struct {
 		Bitbucket BitbucketConfig `yaml:"bitbucket"`
 		Github    GithubConfig    `yaml:"github"`
 	}

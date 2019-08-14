@@ -125,13 +125,9 @@ func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*Pu
 	for _, pullRequest := range repository.OpenPullRequests {
 
 		var logIgnoredPullRequest = func(message string) {
-			log.Info(repository.Name, "->", pullRequest.Link, " ignored because: ", message)
+			log.Infof("%s: %s (%s) ignored because %s", repository.Name, pullRequest.Title, pullRequest.Link, message)
 		}
 
-		if !pullRequest.IsFromOneOfUsers(repository.Host.GetUsers()) {
-			logIgnoredPullRequest("Not from one of the team's users")
-			continue
-		}
 		if pullRequest.IsWIP() {
 			logIgnoredPullRequest("Marked WIP")
 			continue
@@ -146,12 +142,20 @@ func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*Pu
 		}
 
 		if pullRequest.IsApproved(repository.Host.GetUsers(), config.GetNumberOfNeededApprovals()) {
+			if !pullRequest.IsFromOneOfUsers(repository.Host.GetUsers()) {
+				logIgnoredPullRequest("Not from one of the team's users")
+				continue
+			}
 			if pullRequest.UpdateTime.After(time.Now().Add(-config.AgeBeforeNotifying)) {
 				logIgnoredPullRequest(fmt.Sprintf("Merge not overdue, hasn't been stale for %v", config.AgeBeforeNotifying))
 				continue
 			}
 			readyToMerge = append(readyToMerge, pullRequest)
 		} else {
+			if !config.ReviewPRsFromNonMembers && !pullRequest.IsFromOneOfUsers(repository.Host.GetUsers()) {
+				logIgnoredPullRequest("Not from one of the team's users")
+				continue
+			}
 			readyToReview = append(readyToReview, pullRequest)
 		}
 	}

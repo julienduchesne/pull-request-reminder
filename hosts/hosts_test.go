@@ -22,6 +22,7 @@ func TestGetPullRequestsToDisplay(t *testing.T) {
 		readyToMerge            bool
 		readyToReview           bool
 		numberOfNeededApprovals int
+		reviewPRsFromNonMembers bool
 	}{
 		{
 			name: "Not Approved PR",
@@ -56,6 +57,25 @@ func TestGetPullRequestsToDisplay(t *testing.T) {
 			name: "Author not from team",
 			pullRequest: &PullRequest{Title: "User not from team", Author: config.User{Name: "otheruser"}, Reviewers: []*Reviewer{
 				{Approved: false, User: config.User{Name: "user1"}},
+				{Approved: false, User: config.User{Name: "user2"}},
+			}},
+			readyToMerge:  false,
+			readyToReview: false,
+		},
+		{
+			name: "Author not from team with config to review anyways",
+			pullRequest: &PullRequest{Title: "User not from team", Author: config.User{Name: "otheruser"}, Reviewers: []*Reviewer{
+				{Approved: false, User: config.User{Name: "user1"}},
+				{Approved: false, User: config.User{Name: "user2"}},
+			}},
+			readyToMerge:            false,
+			readyToReview:           true,
+			reviewPRsFromNonMembers: true,
+		},
+		{
+			name: "Approved PR not from team",
+			pullRequest: &PullRequest{Title: "Approved", Author: config.User{Name: "otheruser"}, Reviewers: []*Reviewer{
+				{Approved: true, User: config.User{Name: "user1"}},
 				{Approved: false, User: config.User{Name: "user2"}},
 			}},
 			readyToMerge:  false,
@@ -114,8 +134,9 @@ func TestGetPullRequestsToDisplay(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repository := NewRepository(&bitbucketCloud{
 				config: &config.TeamConfig{
-					AgeBeforeNotifying: maxAge,
-					NumberOfApprovals:  tt.numberOfNeededApprovals,
+					AgeBeforeNotifying:      maxAge,
+					ReviewPRsFromNonMembers: tt.reviewPRsFromNonMembers,
+					NumberOfApprovals:       tt.numberOfNeededApprovals,
 					Users: []config.User{
 						{Name: "user1", BitbucketUUID: "user1"},
 						{Name: "user2", BitbucketUUID: "user2"},

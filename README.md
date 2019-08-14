@@ -29,6 +29,7 @@ This app supports a configuration file with following format (JSON or YAML)
             "name":"my-team",
             "age_before_notifying": "24h",
             "number_of_approvals": 1,
+            "review_pr_from_non_members": true,
             "hosts": {
                 "bitbucket":{
                     "repositories":[
@@ -48,10 +49,10 @@ This app supports a configuration file with following format (JSON or YAML)
             },
             "messaging": {
                 "slack":{
+                    "token":"xoxb-abcd",
                     "message_users_individually": true,
                     // or
-                    "channel": "#my_channel",
-                    "token":"xoxb-abcd"
+                    "channel": "#my_channel"
                 }
             },
             "users":[
