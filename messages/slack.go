@@ -95,7 +95,7 @@ func buildUserSlackMessages(repositoriesNeedingAction []hosts.Repository) map[st
 		for _, pullRequest := range readyToReview {
 			for _, reviewer := range pullRequest.Reviewers {
 				username := reviewer.User.SlackUsername
-				if !reviewer.Approved {
+				if !reviewer.Approved && reviewer.User.SlackUsername != "" {
 					readyToReviewByUser[username] = append(readyToReviewByUser[username], pullRequest)
 				}
 			}
