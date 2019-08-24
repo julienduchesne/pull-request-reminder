@@ -13,9 +13,6 @@ type MessageHandler interface {
 
 // GetHandlers returns all available and configured MessageHandler instances
 func GetHandlers(config *config.TeamConfig) []MessageHandler {
-	handlers := []MessageHandler{}
-	if slackHandler := newSlackMessageHandler(config); slackHandler != nil {
-		handlers = append(handlers, slackHandler)
-	}
+	handlers := []MessageHandler{newSlackMessageHandler(config)}
 	return handlers
 }

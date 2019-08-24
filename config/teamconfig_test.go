@@ -50,3 +50,16 @@ func TestGithubTeamConfig(t *testing.T) {
 	}
 	assert.True(t, config.IsGithubConfigured())
 }
+
+func TestGetNumberOfNeededApprovals(t *testing.T) {
+	t.Parallel()
+
+	config := &TeamConfig{}
+	assert.Equal(t, 1, config.GetNumberOfNeededApprovals())
+
+	config = &TeamConfig{NumberOfApprovals: 1}
+	assert.Equal(t, 1, config.GetNumberOfNeededApprovals())
+
+	config = &TeamConfig{NumberOfApprovals: 2}
+	assert.Equal(t, 2, config.GetNumberOfNeededApprovals())
+}
