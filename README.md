@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/julienduchesne/pull-request-reminder)](https://goreportcard.com/report/github.com/julienduchesne/pull-request-reminder)
 
 Open source pull request reminder
-* Grabs pull requests from the supports hosts
+* Fetches pull requests from the supported hosts
 * Finds out which ones still need approvals and which ones are ready to merge 
 * Posts to the configured messaging handlers (only Slack for now)
 
@@ -14,8 +14,8 @@ Open source pull request reminder
 
 ### Supported message handlers
 * Slack
-    * Posts to the channel and pings the PR owner when it is ready to merge  
-    * Simply posts to the channel when the PR still needs approvers  
+    * Posts to the given channel a list of all PRs still needing approvals and pings the owner when a PR is ready to merge  
+    * Alternatively, sends personalized messages to all the concerned team members (those who need to act on a PR)  
 ![Slack](https://github.com/julienduchesne/pull-request-reminder/raw/master/slack.png)
 
 ## Configuration
@@ -27,9 +27,9 @@ This app supports a configuration file with following format (JSON or YAML)
     "teams":[
         {
             "name":"my-team",
-            "age_before_notifying": "24h",
-            "number_of_approvals": 1,
-            "review_pr_from_non_members": true,
+            "age_before_notifying": "24h", // If set, will ignore PRs that have been created for less than the given time (when seeking approvals) and will ignore PRs that have been stale for less than the given time when they have been approved (when waiting for merge)
+            "number_of_approvals": 1, // Number of approvals needed for a PR to be considered approved (Ignores the author's approval). Defaults to 1
+            "review_pr_from_non_members": true, // If not set, PRs to the listed repositories will be ignored if they are not authored by one of the team members
             "hosts": {
                 "bitbucket":{
                     "repositories":[
@@ -50,9 +50,8 @@ This app supports a configuration file with following format (JSON or YAML)
             "messaging": {
                 "slack":{
                     "token":"xoxb-abcd",
-                    "message_users_individually": true,
-                    // or
-                    "channel": "#my_channel"
+                    "message_users_individually": true, // If set, will send a personalized message to all the concerned team members (those who need to act on a PR)
+                    "channel": "#my_channel" // If set, will send an summary message to the given channel
                 }
             },
             "users":[
