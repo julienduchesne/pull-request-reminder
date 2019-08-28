@@ -24,9 +24,11 @@ type TeamConfig struct {
 
 // BitbucketConfig represents a team's bitbucket configuration
 type BitbucketConfig struct {
-	Username     string   `yaml:"username"`
-	Password     string   `yaml:"password"`
-	Repositories []string `yaml:"repositories"`
+	Username        string   `yaml:"username"`
+	Password        string   `yaml:"password"`
+	Repositories    []string `yaml:"repositories"`
+	Team            string   `yaml:"team"`
+	FindUsersInTeam bool     `yaml:"find_users_in_team"`
 }
 
 // GithubConfig represents a team's github configuration
@@ -59,21 +61,14 @@ func (config *TeamConfig) GetNumberOfNeededApprovals() int {
 	return config.NumberOfApprovals
 }
 
-// GetBitbucketUsers returns a map of all bitbucket users'
-func (config *TeamConfig) GetBitbucketUsers() map[string]User {
-	users := map[string]User{}
-	for _, user := range config.Users {
-		if user.BitbucketUUID != "" {
-			users[user.BitbucketUUID] = user
-		}
-	}
-	return users
-}
-
 // IsBitbucketConfigured returns true if all necessary configurations are set to handle Bitbucket
 func (config *TeamConfig) IsBitbucketConfigured() bool {
 	bitbucketConfig := config.Hosts.Bitbucket
-	return len(bitbucketConfig.Repositories) > 0 && len(config.GetBitbucketUsers()) > 0 &&
+	hasUserWithUUID := false
+	for _, user := range config.Users {
+		hasUserWithUUID = hasUserWithUUID || user.BitbucketUUID != ""
+	}
+	return len(bitbucketConfig.Repositories) > 0 && (hasUserWithUUID || (bitbucketConfig.FindUsersInTeam && bitbucketConfig.Team != "")) &&
 		bitbucketConfig.Username != "" && bitbucketConfig.Password != ""
 }
 

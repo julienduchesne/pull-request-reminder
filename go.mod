@@ -4,7 +4,8 @@ go 1.12
 
 require (
 	github.com/aws/aws-sdk-go v1.23.3
-	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
+	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/golang/mock v1.3.1
 	github.com/google/go-github/v25 v25.1.3
 	github.com/gorilla/websocket v1.4.0 // indirect
@@ -12,6 +13,7 @@ require (
 	github.com/k0kubun/pp v3.0.1+incompatible // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/ktrysmt/go-bitbucket v0.4.1
+	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2
 	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/nlopes/slack v0.5.1-0.20190421170715-65ea2b979a7f

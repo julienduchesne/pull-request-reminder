@@ -13,7 +13,6 @@ func TestEmptyTeamConfig(t *testing.T) {
 		{BitbucketUUID: "", GithubUsername: ""},
 	}}
 	assert.False(t, config.IsBitbucketConfigured())
-	assert.Empty(t, config.GetBitbucketUsers())
 	assert.False(t, config.IsGithubConfigured())
 	assert.Empty(t, config.GetGithubUsers())
 }
@@ -24,7 +23,6 @@ func TestBitbucketTeamConfig(t *testing.T) {
 	config := &TeamConfig{Users: []User{
 		{BitbucketUUID: "{test}", GithubUsername: ""},
 	}}
-	assert.Equal(t, map[string]User{"{test}": {BitbucketUUID: "{test}", GithubUsername: ""}}, config.GetBitbucketUsers())
 	assert.False(t, config.IsBitbucketConfigured())
 
 	config.Hosts.Bitbucket = BitbucketConfig{

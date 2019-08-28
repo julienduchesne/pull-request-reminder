@@ -85,3 +85,7 @@ func (mock *mockBitbucketClient) GetPullRequests(owner, slug, id string) (interf
 	}
 	return testListPullRequestsResponse, nil
 }
+
+func (mock *mockBitbucketClient) GetTeamMembers(team string) (interface{}, error) {
+	return nil, nil
+}

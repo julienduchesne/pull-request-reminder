@@ -37,7 +37,9 @@ This app supports a configuration file with following format (JSON or YAML)
                         "owner/repo2"
                     ],
                     "username":"user",
-                    "password":"app_password"
+                    "password":"app_password",
+                    "team": "my_team",
+                    "find_users_in_team": true // If this attribute and `team` is set, user UUIDs will be found from the user name. An error will be raised if a user is not found or if there is more than one match for a single user. To fix those issues, the user UUID must be set manually.
                 },
                 "github":{
                     "repositories":[

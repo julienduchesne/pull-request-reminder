@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"github.com/julienduchesne/pull-request-reminder/config"
 	"github.com/ktrysmt/go-bitbucket"
+	"github.com/matryer/try"
 	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
 )
@@ -65,44 +65,30 @@ func (pr *bitbucketPullRequest) ToGenericPullRequest(users map[string]config.Use
 	return genericPullRequest
 }
 
-type bitbucketClientInterface interface {
+type bitbucketClient interface {
 	GetPullRequests(owner, slug, id string) (interface{}, error)
+	GetTeamMembers(team string) (interface{}, error)
 }
 
 type bitbucketClientWrapper struct {
 	client *bitbucket.Client
 }
 
-func newBitbucketClientWrapper(config config.BitbucketConfig) *bitbucketClientWrapper {
-	return &bitbucketClientWrapper{client: bitbucket.NewBasicAuth(config.Username, config.Password)}
-}
-
 func (wrapper *bitbucketClientWrapper) GetPullRequests(owner, slug, id string) (interface{}, error) {
-	var (
-		err      error
-		response interface{}
-	)
-	opt := &bitbucket.PullRequestsOptions{
+	return wrapper.client.Repositories.PullRequests.Get(&bitbucket.PullRequestsOptions{
 		Owner:    owner,
 		RepoSlug: slug,
-	}
-	if id != "" {
-		opt.ID = id
-	}
-	getPullRequestFunc := func() error {
-		response, err = wrapper.client.Repositories.PullRequests.Get(opt)
-		return err
-	}
-	err = backoff.Retry(getPullRequestFunc, backoff.NewExponentialBackOff())
-	if err != nil {
-		return nil, err
-	}
-	return response, err
+		ID:       id,
+	})
+}
+
+func (wrapper *bitbucketClientWrapper) GetTeamMembers(team string) (interface{}, error) {
+	return wrapper.client.Teams.Members(team)
 }
 
 type bitbucketCloud struct {
 	config          *config.TeamConfig
-	client          bitbucketClientInterface
+	client          bitbucketClient
 	repositoryNames []string
 }
 
@@ -110,13 +96,18 @@ func newBitbucketCloud(config *config.TeamConfig) *bitbucketCloud {
 	bitbucketConfig := config.Hosts.Bitbucket
 	return &bitbucketCloud{
 		config:          config,
-		client:          newBitbucketClientWrapper(bitbucketConfig),
+		client:          &bitbucketClientWrapper{client: bitbucket.NewBasicAuth(bitbucketConfig.Username, bitbucketConfig.Password)},
 		repositoryNames: bitbucketConfig.Repositories,
 	}
 
 }
 
 func (host *bitbucketCloud) getPullRequests(owner, repoSlug string) ([]*PullRequest, error) {
+	var (
+		response interface{}
+		err      error
+	)
+
 	result := []*PullRequest{}
 	listedPullRequests := &struct {
 		Values []struct {
@@ -124,18 +115,25 @@ func (host *bitbucketCloud) getPullRequests(owner, repoSlug string) ([]*PullRequ
 		}
 	}{}
 
-	response, err := host.client.GetPullRequests(owner, repoSlug, "")
-	if err != nil {
+	if err := try.Do(func(attempt int) (bool, error) {
+		response, err = host.client.GetPullRequests(owner, repoSlug, "")
+		return attempt < 5, err
+	}); err != nil {
 		return nil, fmt.Errorf("Error fetching pull requests from %v/%v in Bitbucket", owner, repoSlug)
 	}
+
 	if err = mapstructure.Decode(response, &listedPullRequests); err != nil {
 		return nil, err
 	}
 
 	for _, listedPullRequest := range listedPullRequests.Values {
-		if response, err = host.client.GetPullRequests(owner, repoSlug, strconv.Itoa(listedPullRequest.ID)); err != nil {
-			return nil, err
+		if err := try.Do(func(attempt int) (bool, error) {
+			response, err = host.client.GetPullRequests(owner, repoSlug, strconv.Itoa(listedPullRequest.ID))
+			return attempt < 5, err
+		}); err != nil {
+			return nil, fmt.Errorf("Error fetching the pull request with ID %v from %v/%v in Bitbucket", listedPullRequest.ID, owner, repoSlug)
 		}
+
 		var pullRequest bitbucketPullRequest
 		if err = mapstructure.Decode(response, &pullRequest); err != nil {
 			return nil, err
@@ -155,7 +153,13 @@ func (host *bitbucketCloud) GetName() string {
 }
 
 func (host *bitbucketCloud) GetUsers() map[string]config.User {
-	return host.config.GetBitbucketUsers()
+	users := map[string]config.User{}
+	for _, user := range host.config.Users {
+		if user.BitbucketUUID != "" {
+			users[user.BitbucketUUID] = user
+		}
+	}
+	return users
 }
 
 func (host *bitbucketCloud) GetRepositories() []Repository {
