@@ -54,6 +54,8 @@ type User struct {
 	SlackUsername  string `yaml:"slack_username"`
 }
 
+// GetNumberOfNeededApprovals returns the number of approvals needed for a pull request to be considered accepted.
+// It simply returns the configured number with a minimum of 1
 func (config *TeamConfig) GetNumberOfNeededApprovals() int {
 	if config.NumberOfApprovals <= 0 {
 		return 1
@@ -64,12 +66,7 @@ func (config *TeamConfig) GetNumberOfNeededApprovals() int {
 // IsBitbucketConfigured returns true if all necessary configurations are set to handle Bitbucket
 func (config *TeamConfig) IsBitbucketConfigured() bool {
 	bitbucketConfig := config.Hosts.Bitbucket
-	hasUserWithUUID := false
-	for _, user := range config.Users {
-		hasUserWithUUID = hasUserWithUUID || user.BitbucketUUID != ""
-	}
-	return len(bitbucketConfig.Repositories) > 0 && (hasUserWithUUID || (bitbucketConfig.FindUsersInTeam && bitbucketConfig.Team != "")) &&
-		bitbucketConfig.Username != "" && bitbucketConfig.Password != ""
+	return len(bitbucketConfig.Repositories) > 0 && bitbucketConfig.Username != "" && bitbucketConfig.Password != ""
 }
 
 // GetGithubUsers returns a map of all github users'

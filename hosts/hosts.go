@@ -120,6 +120,7 @@ func (repository *RepositoryImpl) GetName() string {
 // GetPullRequestsToDisplay returns all pull requests that are either waiting for approvals or ready to merge
 func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*PullRequest, readyToReview []*PullRequest) {
 	config := repository.GetHost().GetConfig()
+	hostUsers, _ := repository.GetHost().GetUsers()
 
 	readyToMerge, readyToReview = []*PullRequest{}, []*PullRequest{}
 	for _, pullRequest := range repository.OpenPullRequests {
@@ -132,7 +133,7 @@ func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*Pu
 			logIgnoredPullRequest("Marked WIP")
 			continue
 		}
-		if len(pullRequest.TeamReviewers(repository.Host.GetUsers())) == 0 {
+		if len(pullRequest.TeamReviewers(hostUsers)) == 0 {
 			logIgnoredPullRequest("No reviewers")
 			continue
 		}
@@ -141,8 +142,8 @@ func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*Pu
 			continue
 		}
 
-		if pullRequest.IsApproved(repository.Host.GetUsers(), config.GetNumberOfNeededApprovals()) {
-			if !pullRequest.IsFromOneOfUsers(repository.Host.GetUsers()) {
+		if pullRequest.IsApproved(hostUsers, config.GetNumberOfNeededApprovals()) {
+			if !pullRequest.IsFromOneOfUsers(hostUsers) {
 				logIgnoredPullRequest("Not from one of the team's users")
 				continue
 			}
@@ -152,7 +153,7 @@ func (repository *RepositoryImpl) GetPullRequestsToDisplay() (readyToMerge []*Pu
 			}
 			readyToMerge = append(readyToMerge, pullRequest)
 		} else {
-			if !config.ReviewPRsFromNonMembers && !pullRequest.IsFromOneOfUsers(repository.Host.GetUsers()) {
+			if !config.ReviewPRsFromNonMembers && !pullRequest.IsFromOneOfUsers(hostUsers) {
 				logIgnoredPullRequest("Not from one of the team's users")
 				continue
 			}
@@ -173,7 +174,7 @@ type Host interface {
 	GetConfig() *config.TeamConfig
 	GetName() string
 	GetRepositories() []Repository
-	GetUsers() map[string]config.User
+	GetUsers() (map[string]config.User, error)
 }
 
 // GetHosts returns all configured Hosts (SCM providers)

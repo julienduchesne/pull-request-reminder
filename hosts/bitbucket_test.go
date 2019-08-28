@@ -77,7 +77,118 @@ func TestGetBitbucketRepositories(t *testing.T) {
 	assert.Equal(t, "John Doe3", reviewer.User.Name)
 }
 
-type mockBitbucketClient struct{}
+func TestGetUsers(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name            string
+		configuredUsers []config.User
+		apiResponse     []map[string]interface{}
+		expectedUsers   map[string]config.User
+		expectError     bool
+	}{
+		{
+			name: "Fully configured",
+			configuredUsers: []config.User{
+				{Name: "John Doe", BitbucketUUID: "{jdoe}"},
+				{Name: "John Doe2", BitbucketUUID: "{jdoe2}"},
+				{Name: "John Doe3", BitbucketUUID: ""},
+			},
+			expectedUsers: map[string]config.User{
+				"{jdoe}":  {Name: "John Doe", BitbucketUUID: "{jdoe}"},
+				"{jdoe2}": {Name: "John Doe2", BitbucketUUID: "{jdoe2}"},
+			},
+		},
+		{
+			name: "Find exact name match",
+			configuredUsers: []config.User{
+				{Name: "John Doe", BitbucketUUID: ""},
+			},
+			apiResponse: []map[string]interface{}{
+				{
+					"display_name": "John Doe",
+					"uuid":         "{jdoe}",
+				},
+			},
+			expectedUsers: map[string]config.User{
+				"{jdoe}": {Name: "John Doe", BitbucketUUID: "{jdoe}"},
+			},
+		},
+		{
+			name: "Find name that almost matches with dashes",
+			configuredUsers: []config.User{
+				{Name: "John Master-Doe", BitbucketUUID: ""},
+			},
+			apiResponse: []map[string]interface{}{
+				{
+					"display_name": "John master Doe",
+					"uuid":         "{jdoe}",
+				},
+			},
+			expectedUsers: map[string]config.User{
+				"{jdoe}": {Name: "John Master-Doe", BitbucketUUID: "{jdoe}"},
+			},
+		},
+		{
+			name: "Multiple matches",
+			configuredUsers: []config.User{
+				{Name: "John Doe", BitbucketUUID: ""},
+			},
+			apiResponse: []map[string]interface{}{
+				{
+					"display_name": "John Doe",
+					"uuid":         "{jdoe}",
+				},
+				{
+					"display_name": "John Doe",
+					"uuid":         "{jdoe2}",
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "Multiple users with same UUID",
+			configuredUsers: []config.User{
+				{Name: "John Doe", BitbucketUUID: ""},
+				{Name: "Jane Doe", BitbucketUUID: "{jdoe}"},
+			},
+			apiResponse: []map[string]interface{}{
+				{
+					"display_name": "John Doe",
+					"uuid":         "{jdoe}",
+				},
+			},
+			expectError: true,
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			host := &bitbucketCloud{
+				client: &mockBitbucketClient{
+					getTeamResponse: tt.apiResponse,
+				},
+				repositoryNames: []string{"jdoe/test"},
+				config: &config.TeamConfig{
+					Users: tt.configuredUsers,
+				},
+			}
+			host.config.Hosts.Bitbucket.Team = "Anything"
+			host.config.Hosts.Bitbucket.FindUsersInTeam = tt.apiResponse != nil
+			users, err := host.GetUsers()
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+			assert.Equal(t, tt.expectedUsers, users)
+		})
+	}
+
+}
+
+type mockBitbucketClient struct {
+	getTeamResponse []map[string]interface{}
+}
 
 func (mock *mockBitbucketClient) GetPullRequests(owner, slug, id string) (interface{}, error) {
 	if id != "" {
@@ -87,5 +198,5 @@ func (mock *mockBitbucketClient) GetPullRequests(owner, slug, id string) (interf
 }
 
 func (mock *mockBitbucketClient) GetTeamMembers(team string) (interface{}, error) {
-	return nil, nil
+	return map[string]interface{}{"values": mock.getTeamResponse}, nil
 }

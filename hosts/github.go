@@ -54,7 +54,7 @@ func newGithubHost(config *config.TeamConfig) *githubHost {
 
 }
 
-func (host *githubHost) getPullRequests(owner, repoSlug string) ([]*PullRequest, error) {
+func (host *githubHost) getPullRequests(owner, repoSlug string, users map[string]config.User) ([]*PullRequest, error) {
 	var result = []*PullRequest{}
 
 	response, _, err := host.client.ListPullRequests(owner, repoSlug, &github.PullRequestListOptions{State: "open"})
@@ -64,7 +64,7 @@ func (host *githubHost) getPullRequests(owner, repoSlug string) ([]*PullRequest,
 
 	for _, githubPullRequest := range response {
 		pullRequest := &PullRequest{
-			Author:      host.GetUsers()[*githubPullRequest.User.Login],
+			Author:      users[*githubPullRequest.User.Login],
 			Description: *githubPullRequest.Body,
 			Link:        *githubPullRequest.HTMLURL,
 			Title:       *githubPullRequest.Title,
@@ -96,7 +96,7 @@ func (host *githubHost) getPullRequests(owner, repoSlug string) ([]*PullRequest,
 				continue // Already handled
 			}
 			reviewerMap[reviewUser] = &Reviewer{
-				User:             host.GetUsers()[reviewUser],
+				User:             users[reviewUser],
 				Approved:         *review.State == "APPROVED",
 				RequestedChanges: *review.State == "CHANGES_REQUESTED",
 			}
@@ -120,16 +120,21 @@ func (host *githubHost) GetName() string {
 	return "Github"
 }
 
-func (host *githubHost) GetUsers() map[string]config.User {
-	return host.config.GetGithubUsers()
+func (host *githubHost) GetUsers() (map[string]config.User, error) {
+	return host.config.GetGithubUsers(), nil
 }
 
 func (host *githubHost) GetRepositories() []Repository {
+	users, err := host.GetUsers()
+	if err != nil {
+		log.WithError(err).Fatalln("Error fetching users from Bitbucket")
+	}
+
 	repositories := []Repository{}
 	for _, repositoryName := range host.repositoryNames {
 		splitRepository := strings.Split(repositoryName, "/")
 		owner, slug := splitRepository[0], splitRepository[1]
-		pullRequests, err := host.getPullRequests(owner, slug)
+		pullRequests, err := host.getPullRequests(owner, slug, users)
 		if err != nil {
 			log.WithError(err).Fatalln("Caught an error while describing pull requests")
 		}

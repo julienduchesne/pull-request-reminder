@@ -170,11 +170,12 @@ func (mr *MockHostMockRecorder) GetRepositories() *gomock.Call {
 }
 
 // GetUsers mocks base method
-func (m *MockHost) GetUsers() map[string]config.User {
+func (m *MockHost) GetUsers() (map[string]config.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUsers")
 	ret0, _ := ret[0].(map[string]config.User)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetUsers indicates an expected call of GetUsers
