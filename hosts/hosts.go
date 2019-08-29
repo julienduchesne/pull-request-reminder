@@ -173,7 +173,7 @@ func (repository *RepositoryImpl) HasPullRequestsToDisplay() bool {
 type Host interface {
 	GetConfig() *config.TeamConfig
 	GetName() string
-	GetRepositories() []Repository
+	GetRepositories() ([]Repository, error)
 	GetUsers() (map[string]config.User, error)
 }
 

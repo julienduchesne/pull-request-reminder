@@ -45,7 +45,7 @@ func TestGetRepositories(t *testing.T) {
 	mockRepositoryWithoutPRs.EXPECT().GetName().Return(testRepositoryWithoutPRsName).AnyTimes()
 
 	mockHost := hosts.NewMockHost(ctrl)
-	mockHost.EXPECT().GetRepositories().Return([]hosts.Repository{mockRepository, mockRepositoryWithoutPRs})
+	mockHost.EXPECT().GetRepositories().Return([]hosts.Repository{mockRepository, mockRepositoryWithoutPRs}, nil)
 
 	repositories := getRepositoriesNeedingAction([]hosts.Host{mockHost})
 	assert.Len(t, repositories, 1)

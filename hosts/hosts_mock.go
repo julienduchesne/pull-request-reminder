@@ -156,11 +156,12 @@ func (mr *MockHostMockRecorder) GetName() *gomock.Call {
 }
 
 // GetRepositories mocks base method
-func (m *MockHost) GetRepositories() []Repository {
+func (m *MockHost) GetRepositories() ([]Repository, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRepositories")
 	ret0, _ := ret[0].([]Repository)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetRepositories indicates an expected call of GetRepositories

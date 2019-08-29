@@ -25,8 +25,9 @@ func TestGetGithubRepositories(t *testing.T) {
 		},
 	}
 
-	repositories := host.GetRepositories()
+	repositories, err := host.GetRepositories()
 
+	assert.Nil(t, err)
 	assert.Len(t, repositories, 1)
 	repository := repositories[0]
 	assert.Equal(t, "https://github.com/jdoe/test", repository.GetLink())
@@ -48,9 +49,51 @@ func TestGetGithubRepositories(t *testing.T) {
 	assert.Equal(t, "https://github.com/coveooss/tgf/pull/79", pullRequest.Link) // directly from the response
 }
 
-type mockGithubClient struct{}
+func TestGetGithubRepositoriesErrors(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name        string
+		client      githubClient
+		expectError string
+	}{
+		{
+			name:        "list PR error",
+			client:      &mockGithubClient{errorOnListPullRequests: true},
+			expectError: "Caught an error while describing pull requests: Error fetching pull requests from jdoe/test in Github: list PR error",
+		},
+		{
+			name:        "list reviews error",
+			client:      &mockGithubClient{errorOnListReviews: true},
+			expectError: "Caught an error while describing pull requests: Error fetching reviews from the pull request with ID 79 from jdoe/test in Github: list reviews error",
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			host := &githubHost{
+				client:          tt.client,
+				repositoryNames: []string{"jdoe/test"},
+				config: &config.TeamConfig{
+					Users: []config.User{},
+				},
+			}
+			_, err := host.GetRepositories()
+			assert.EqualError(t, err, tt.expectError)
+		})
+	}
+}
+
+type mockGithubClient struct {
+	errorOnListPullRequests bool
+	errorOnListReviews      bool
+}
 
 func (client *mockGithubClient) ListPullRequests(owner string, repo string, opt *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error) {
+	if client.errorOnListPullRequests {
+		return nil, nil, fmt.Errorf("list PR error")
+	}
+
 	jsonFile, _ := os.Open("responses_test/listpullrequests.json")
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	var response []*github.PullRequest
@@ -59,6 +102,10 @@ func (client *mockGithubClient) ListPullRequests(owner string, repo string, opt 
 }
 
 func (client *mockGithubClient) ListReviews(owner, repo string, number int, opt *github.ListOptions) ([]*github.PullRequestReview, *github.Response, error) {
+	if client.errorOnListReviews {
+		return nil, nil, fmt.Errorf("list reviews error")
+	}
+
 	var response []*github.PullRequestReview
 	if opt.Page == 1 {
 		jsonFile, _ := os.Open("responses_test/reviews1.json")

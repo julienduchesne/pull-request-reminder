@@ -213,6 +213,17 @@ func TestGetHosts(t *testing.T) {
 	}
 }
 
+func TestGetHostName(t *testing.T) {
+	t.Parallel()
+
+	hosts := GetHosts(getTeamConfig(true, true))
+	names := []string{}
+	for _, host := range hosts {
+		names = append(names, host.GetName())
+	}
+	assert.Equal(t, []string{"Bitbucket", "Github"}, names)
+}
+
 func getTeamConfig(withBitbucket bool, withGithub bool) *config.TeamConfig {
 	teamConfig := &config.TeamConfig{
 		Users: []config.User{},

@@ -206,7 +206,7 @@ func (host *bitbucketCloud) GetUsers() (map[string]config.User, error) {
 				}
 				host.users[user.BitbucketUUID] = user
 			} else {
-				log.Warnf("User %s has no set Bitbucket UUID", user.Name)
+				log.Warningf("User %s has no set Bitbucket UUID", user.Name)
 			}
 		}
 	}
@@ -214,10 +214,10 @@ func (host *bitbucketCloud) GetUsers() (map[string]config.User, error) {
 	return host.users, nil
 }
 
-func (host *bitbucketCloud) GetRepositories() []Repository {
+func (host *bitbucketCloud) GetRepositories() ([]Repository, error) {
 	users, err := host.GetUsers()
 	if err != nil {
-		log.WithError(err).Fatalln("Error fetching users from Bitbucket")
+		return nil, fmt.Errorf("Error fetching users from Bitbucket: %v", err)
 	}
 
 	repositories := []Repository{}
@@ -226,12 +226,12 @@ func (host *bitbucketCloud) GetRepositories() []Repository {
 		owner, slug := splitRepository[0], splitRepository[1]
 		pullRequests, err := host.getPullRequests(owner, slug, users)
 		if err != nil {
-			log.WithError(err).Fatalln("Caught an error while describing pull requests")
+			return nil, fmt.Errorf("Caught an error while describing pull requests: %v", err)
 		}
 		repository := NewRepository(host, repositoryName, fmt.Sprintf("https://bitbucket.org/%v", repositoryName), pullRequests)
 		repositories = append(repositories, repository)
 	}
-	return repositories
+	return repositories, nil
 }
 
 func (host *bitbucketCloud) getTeamMembers(team string) ([]bitbucketTeamMember, error) {

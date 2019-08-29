@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/julienduchesne/pull-request-reminder/config"
 	"github.com/julienduchesne/pull-request-reminder/hosts"
@@ -11,16 +11,16 @@ import (
 func main() {
 	configReader, err := config.NewReader()
 	if err != nil {
-		log.Fatalf("Error while initializing the configuration reader: %v", err)
+		log.WithError(err).Fatalln("Error while initializing the configuration reader")
 	}
 	config, err := configReader.ReadConfig()
 	if err != nil {
-		log.Fatalf("Error while reading the configuration: %v", err)
+		log.WithError(err).Fatalln("Error while reading the configuration")
 	}
 	for _, team := range config.Teams {
 		repositories := getRepositoriesNeedingAction(hosts.GetHosts(team))
 		if err = handleRepositories(messages.GetHandlers(team), repositories); err != nil {
-			log.Fatalf("Error while handling messages: %v", err)
+			log.WithError(err).Fatalln("Error while handling messages")
 		}
 	}
 }
@@ -28,7 +28,11 @@ func main() {
 func getRepositoriesNeedingAction(teamHosts []hosts.Host) []hosts.Repository {
 	repositoriesNeedingAction := []hosts.Repository{}
 	for _, host := range teamHosts {
-		for _, repository := range host.GetRepositories() {
+		repositories, err := host.GetRepositories()
+		if err != nil {
+			log.WithError(err).Fatalf("Error while fetching repositories from %s", host.GetName())
+		}
+		for _, repository := range repositories {
 			if repository.HasPullRequestsToDisplay() {
 				repositoriesNeedingAction = append(repositoriesNeedingAction, repository)
 			}

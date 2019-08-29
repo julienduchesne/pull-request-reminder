@@ -1,6 +1,7 @@
 package hosts
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -41,6 +42,8 @@ var testGetPullRequestResponse = map[string]interface{}{
 }
 
 func TestGetBitbucketRepositories(t *testing.T) {
+	t.Parallel()
+
 	utc, _ := time.LoadLocation("UTC")
 
 	host := &bitbucketCloud{
@@ -54,7 +57,9 @@ func TestGetBitbucketRepositories(t *testing.T) {
 			},
 		},
 	}
-	repositories := host.GetRepositories()
+	repositories, err := host.GetRepositories()
+
+	assert.Nil(t, err)
 	assert.Len(t, repositories, 1)
 	repository := repositories[0].(*RepositoryImpl)
 	assert.Equal(t, "jdoe/test", repository.Name)
@@ -75,6 +80,59 @@ func TestGetBitbucketRepositories(t *testing.T) {
 	assert.False(t, reviewer.Approved)
 	assert.False(t, reviewer.RequestedChanges)
 	assert.Equal(t, "John Doe3", reviewer.User.Name)
+}
+
+func TestGetBitbucketRepositoriesErrors(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name          string
+		client        bitbucketClient
+		emptyTeamName bool
+		expectError   string
+	}{
+		{
+			name:        "get error",
+			client:      &mockBitbucketClient{errorOnGetPullRequest: true},
+			expectError: "Caught an error while describing pull requests: Error fetching the pull request with ID 1 from jdoe/test in Bitbucket",
+		},
+		{
+			name:        "list error",
+			client:      &mockBitbucketClient{errorOnListPullRequests: true},
+			expectError: "Caught an error while describing pull requests: Error fetching pull requests from jdoe/test in Bitbucket",
+		},
+		{
+			name:        "get team members error",
+			client:      &mockBitbucketClient{errorOnGettingTeamMembers: true},
+			expectError: "Error fetching users from Bitbucket: Error fetching members from team my-team: Get team members error",
+		},
+		{
+			name:          "get team members error",
+			client:        &mockBitbucketClient{},
+			emptyTeamName: true,
+			expectError:   "Error fetching users from Bitbucket: Bitbucket is set to find users in the team but the team name is not set",
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			host := &bitbucketCloud{
+				client:          tt.client,
+				repositoryNames: []string{"jdoe/test"},
+				config: &config.TeamConfig{
+					Users: []config.User{
+						{Name: "John Doe", BitbucketUUID: "{jdoe}"},
+					},
+				},
+			}
+			if !tt.emptyTeamName {
+				host.config.Hosts.Bitbucket.Team = "my-team"
+			}
+			host.config.Hosts.Bitbucket.FindUsersInTeam = true
+			_, err := host.GetRepositories()
+			assert.EqualError(t, err, tt.expectError)
+		})
+	}
 }
 
 func TestGetUsers(t *testing.T) {
@@ -187,16 +245,28 @@ func TestGetUsers(t *testing.T) {
 }
 
 type mockBitbucketClient struct {
-	getTeamResponse []map[string]interface{}
+	errorOnGetPullRequest     bool
+	errorOnListPullRequests   bool
+	errorOnGettingTeamMembers bool
+	getTeamResponse           []map[string]interface{}
 }
 
 func (mock *mockBitbucketClient) GetPullRequests(owner, slug, id string) (interface{}, error) {
 	if id != "" {
+		if mock.errorOnGetPullRequest {
+			return nil, fmt.Errorf("get error")
+		}
 		return testGetPullRequestResponse, nil
+	}
+	if mock.errorOnListPullRequests {
+		return nil, fmt.Errorf("list error")
 	}
 	return testListPullRequestsResponse, nil
 }
 
 func (mock *mockBitbucketClient) GetTeamMembers(team string) (interface{}, error) {
+	if mock.errorOnGettingTeamMembers {
+		return nil, fmt.Errorf("Get team members error")
+	}
 	return map[string]interface{}{"values": mock.getTeamResponse}, nil
 }

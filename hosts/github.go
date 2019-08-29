@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/go-github/v25/github"
 	"github.com/julienduchesne/pull-request-reminder/config"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
 
@@ -59,7 +58,7 @@ func (host *githubHost) getPullRequests(owner, repoSlug string, users map[string
 
 	response, _, err := host.client.ListPullRequests(owner, repoSlug, &github.PullRequestListOptions{State: "open"})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error fetching pull requests from %s/%s in Github: %v", owner, repoSlug, err)
 	}
 
 	for _, githubPullRequest := range response {
@@ -78,7 +77,7 @@ func (host *githubHost) getPullRequests(owner, repoSlug string, users map[string
 		for currentPage <= lastPage {
 			reviews, response, err := host.client.ListReviews(owner, repoSlug, *githubPullRequest.Number, &github.ListOptions{Page: currentPage})
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Error fetching reviews from the pull request with ID %v from %s/%s in Github: %v", *githubPullRequest.Number, owner, repoSlug, err)
 			}
 			lastPage = response.LastPage
 			currentPage++
@@ -124,11 +123,8 @@ func (host *githubHost) GetUsers() (map[string]config.User, error) {
 	return host.config.GetGithubUsers(), nil
 }
 
-func (host *githubHost) GetRepositories() []Repository {
-	users, err := host.GetUsers()
-	if err != nil {
-		log.WithError(err).Fatalln("Error fetching users from Bitbucket")
-	}
+func (host *githubHost) GetRepositories() ([]Repository, error) {
+	users, _ := host.GetUsers()
 
 	repositories := []Repository{}
 	for _, repositoryName := range host.repositoryNames {
@@ -136,10 +132,10 @@ func (host *githubHost) GetRepositories() []Repository {
 		owner, slug := splitRepository[0], splitRepository[1]
 		pullRequests, err := host.getPullRequests(owner, slug, users)
 		if err != nil {
-			log.WithError(err).Fatalln("Caught an error while describing pull requests")
+			return nil, fmt.Errorf("Caught an error while describing pull requests: %v", err)
 		}
 		repository := NewRepository(host, repositoryName, fmt.Sprintf("https://github.com/%v", repositoryName), pullRequests)
 		repositories = append(repositories, repository)
 	}
-	return repositories
+	return repositories, nil
 }
