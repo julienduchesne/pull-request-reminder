@@ -69,6 +69,10 @@ This app supports a configuration file with following format (JSON or YAML)
 }
 ```
 
+### Features
+#### Marking pull requests as work in progress
+Anytime a pull request is not ready to review, simply add `WIP` somewhere in its title. PRs marked with `WIP` are ignored by this tool
+
 
 ### Environment
 Credentials can also be set globally as environment variables
