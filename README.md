@@ -22,7 +22,7 @@ Open source pull request reminder
 
 ### Configuration file
 This app supports a configuration file with following format (JSON or YAML)
-```json
+```js
 {
     "teams":[
         {
