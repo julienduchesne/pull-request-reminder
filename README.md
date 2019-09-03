@@ -69,10 +69,13 @@ This app supports a configuration file with following format (JSON or YAML)
 }
 ```
 
-### Features
+### Other Features
 #### Marking pull requests as work in progress
 Anytime a pull request is not ready to review, simply add `WIP` somewhere in its title. PRs marked with `WIP` are ignored by this tool
 
+### To run
+* Run the docker image located here: https://hub.docker.com/r/julienduchesne/pull-request-reminder
+* Build the executable using `go build` and run it
 
 ### Environment
 Credentials can also be set globally as environment variables
@@ -83,7 +86,3 @@ Credentials can also be set globally as environment variables
 
 You can also set the config file path with the following environment variable
 - **PRR_CONFIG**: This path can either be a path to a file on the local file system or a S3 path (s3://bucket/key)
-
-### To run
-* Run the docker image located here: https://hub.docker.com/r/julienduchesne/pull-request-reminder
-* Build the executable using `go build` and run it
