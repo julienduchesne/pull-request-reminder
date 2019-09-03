@@ -3,7 +3,7 @@ module github.com/julienduchesne/pull-request-reminder
 go 1.12
 
 require (
-	github.com/aws/aws-sdk-go v1.23.10
+	github.com/aws/aws-sdk-go v1.23.13
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/golang/mock v1.3.1
