@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/kelseyhightower/envconfig"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -22,6 +23,7 @@ const defaultConfigFileName = ".prr-config"
 // EnvironmentConfig represents all configurations that can be set using environment variables
 type EnvironmentConfig struct {
 	ConfigFilePath string `envconfig:"config"`
+	LogLevel       string `envconfig:"log_level"`
 
 	BitbucketUsername string `envconfig:"bitbucket_username"`
 	BitbucketPassword string `envconfig:"bitbucket_password"`
@@ -65,11 +67,20 @@ func NewReader() (*Reader, error) {
 
 // ReadConfig reads the configuration file at the given path and injects environment variables in the read configuration (team configs)
 func (configReader *Reader) ReadConfig() (config *GlobalConfig, err error) {
-	if config, err = configReader.readFunc(configReader.envConfig.ConfigFilePath); err != nil {
+	envConfig := configReader.envConfig
+	if config, err = configReader.readFunc(envConfig.ConfigFilePath); err != nil {
 		return nil, err
 	}
+	var logLevel log.Level
+	if envConfig.LogLevel == "" {
+		envConfig.LogLevel = log.InfoLevel.String()
+	}
+	if logLevel, err = log.ParseLevel(envConfig.LogLevel); err != nil {
+		return nil, err
+	}
+	log.SetLevel(logLevel)
 	for _, team := range config.Teams {
-		team.setEnvironmentConfig(configReader.envConfig)
+		team.setEnvironmentConfig(envConfig)
 	}
 	return
 }

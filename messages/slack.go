@@ -1,11 +1,13 @@
 package messages
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/julienduchesne/pull-request-reminder/config"
 	"github.com/julienduchesne/pull-request-reminder/hosts"
 	"github.com/nlopes/slack"
+	log "github.com/sirupsen/logrus"
 )
 
 const headerText = "Hello, here are the pull requests requiring your attention today:"
@@ -22,10 +24,17 @@ type slackMessageHandler struct {
 	debugUser string
 }
 
+func (handler *slackMessageHandler) sendMessage(destination string, blocks []slack.Block) error {
+	blocksJSON, _ := json.Marshal(blocks)
+	log.Debugf("Sent the following message to %s:\n %s", destination, string(blocksJSON))
+	_, _, err := handler.client.PostMessage(destination, slack.MsgOptionAsUser(true), slack.MsgOptionBlocks(blocks...))
+	return err
+}
+
 func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []hosts.Repository) error {
 	if handler.channel != "" {
 		sections := buildChannelSlackMessage(repositoriesNeedingAction)
-		if _, _, err := handler.client.PostMessage(handler.channel, slack.MsgOptionAsUser(true), slack.MsgOptionBlocks(sections...)); err != nil {
+		if err := handler.sendMessage(handler.channel, sections); err != nil {
 			return err
 		}
 	}
@@ -39,7 +48,7 @@ func (handler *slackMessageHandler) Notify(repositoriesNeedingAction []hosts.Rep
 				}, sections...)
 				user = handler.debugUser
 			}
-			if _, _, err := handler.client.PostMessage(user, slack.MsgOptionAsUser(true), slack.MsgOptionBlocks(sections...)); err != nil {
+			if err := handler.sendMessage(user, sections); err != nil {
 				return err
 			}
 		}

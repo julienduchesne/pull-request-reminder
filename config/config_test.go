@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )
@@ -56,6 +57,7 @@ func TestReadFileConfig(t *testing.T) {
 		readFunc:  readFileConfig,
 	}
 	config, err := configReader.ReadConfig()
+	assert.Equal(t, log.InfoLevel, log.GetLevel()) // Default level is info
 	assert.Len(t, config.Teams, 1)
 	assert.Nil(t, err)
 }
@@ -65,7 +67,9 @@ func TestReadS3Config(t *testing.T) {
 		envConfig: getTestEnvConfig(s3Path),
 		readFunc:  getS3ConfigReadFunc(&mockedS3Client{t: t}),
 	}
+	configReader.envConfig.LogLevel = "DEBUG"
 	config, err := configReader.ReadConfig()
+	assert.Equal(t, log.DebugLevel, log.GetLevel()) // Log level was set to default
 	assert.Len(t, config.Teams, 1)
 	assert.Nil(t, err)
 }
@@ -84,6 +88,7 @@ func TestCreateConfigReader(t *testing.T) {
 		"PRR_GITHUB_TOKEN":       "gh_token",
 		"PRR_SLACK_TOKEN":        "xoxb_test",
 		"PRR_CONFIG":             "s3://bucket/key",
+		"PRR_LOG_LEVEL":          "DEBUG",
 	} {
 		oldValue := os.Getenv(key)
 		if oldValue != "" {
@@ -95,6 +100,7 @@ func TestCreateConfigReader(t *testing.T) {
 	}
 	configReader, err = NewReader()
 	assert.Nil(t, err)
+	assert.Equal(t, "DEBUG", configReader.envConfig.LogLevel)
 	assert.Equal(t, "bb_pass", configReader.envConfig.BitbucketPassword)
 	assert.Equal(t, "bb_user", configReader.envConfig.BitbucketUsername)
 	assert.Equal(t, "gh_token", configReader.envConfig.GithubToken)
