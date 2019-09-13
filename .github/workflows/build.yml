@@ -27,11 +27,8 @@ jobs:
           bash <(curl -s https://codecov.io/bash)
 
       - name: Docker Login
-        env:
-          DOCKER_USERNAME: ${{ secrets.CODECOV_TOKEN }}
-          DOCKER_PASSWORD: ${{ secrets.CODECOV_TOKEN }}
         run: |
-          docker login docker.pkg.github.com --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
+          docker login docker.pkg.github.com -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Latest
         if: github.ref == 'master'
@@ -42,5 +39,5 @@ jobs:
       - name: Build Tag
         if: github.ref != 'master'
         run: |
-          docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder:{{ github.ref }}
-          docker push docker.pkg.github.com/julienduchesne/pull-request-reminder:{{ github.ref }}
+          docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder:${{ github.ref }}
+          docker push docker.pkg.github.com/julienduchesne/pull-request-reminder:${{ github.ref }}
