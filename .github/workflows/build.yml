@@ -31,17 +31,17 @@ jobs:
 
       - name: Docker Login
         run: |
-          docker login docker.pkg.github.com -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Latest
         if: github.ref == 'refs/heads/master'
         run: |
-          docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder/alpine:latest
-          docker push docker.pkg.github.com/julienduchesne/pull-request-reminder/alpine:latest
+          docker build . -t julienduchesne/pull-request-reminder:latest
+          docker push julienduchesne/pull-request-reminder:latest
 
       - name: Build Tag
         if: github.ref != 'refs/heads/master'
         run: |
           export tag=$(cut -d'/' -f3 <<<'${{ github.ref }}')
-          docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder/alpine:$tag
-          docker push docker.pkg.github.com/julienduchesne/pull-request-reminder/alpine:$tag
+          docker build . -t julienduchesne/pull-request-reminder:$tag
+          docker push julienduchesne/pull-request-reminder:$tag
