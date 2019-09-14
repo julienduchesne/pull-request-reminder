@@ -18,6 +18,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v1
+        
+      - name: Build
+        run: go build -v
 
       - name: Run Tests
         env:
