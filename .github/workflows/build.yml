@@ -31,13 +31,14 @@ jobs:
           docker login docker.pkg.github.com -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Latest
-        if: github.ref == 'master'
+        if: github.ref == 'refs/heads/master'
         run: |
           docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder:latest
           docker push docker.pkg.github.com/julienduchesne/pull-request-reminder:latest
 
       - name: Build Tag
-        if: github.ref != 'master'
+        if: github.ref != 'refs/heads/master'
         run: |
-          docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder:${{ github.ref }}
-          docker push docker.pkg.github.com/julienduchesne/pull-request-reminder:${{ github.ref }}
+          export tag=$(cut -d'/' -f3 <<<'${{ github.ref }}')
+          docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder:$tag
+          docker push docker.pkg.github.com/julienduchesne/pull-request-reminder:$tag
