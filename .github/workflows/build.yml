@@ -36,12 +36,12 @@ jobs:
       - name: Build Latest
         if: github.ref == 'refs/heads/master'
         run: |
-          docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder:latest
-          docker push docker.pkg.github.com/julienduchesne/pull-request-reminder:latest
+          docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder/alpine:latest
+          docker push docker.pkg.github.com/julienduchesne/pull-request-reminder/alpine:latest
 
       - name: Build Tag
         if: github.ref != 'refs/heads/master'
         run: |
           export tag=$(cut -d'/' -f3 <<<'${{ github.ref }}')
-          docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder:$tag
-          docker push docker.pkg.github.com/julienduchesne/pull-request-reminder:$tag
+          docker build . -t docker.pkg.github.com/julienduchesne/pull-request-reminder/alpine:$tag
+          docker push docker.pkg.github.com/julienduchesne/pull-request-reminder/alpine:$tag
