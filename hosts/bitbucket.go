@@ -6,12 +6,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/julienduchesne/pull-request-reminder/config"
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/matryer/try"
 	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 type bitbucketPullRequest struct {
@@ -255,6 +258,12 @@ func (host *bitbucketCloud) getTeamMembers(team string) ([]bitbucketTeamMember, 
 	return listedMembers.Values, nil
 }
 
+func isMn(r rune) bool {
+	return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
+}
+
 func normalizeName(name string) string {
-	return strings.ToLower(regexp.MustCompile("[^A-Za-z]").ReplaceAllString(name, ""))
+	transformChain := transform.Chain(norm.NFD, transform.RemoveFunc(isMn), norm.NFC)
+	result, _, _ := transform.String(transformChain, name)
+	return strings.ToLower(regexp.MustCompile("[^A-Za-z]").ReplaceAllString(result, ""))
 }

@@ -188,6 +188,21 @@ func TestGetUsers(t *testing.T) {
 			},
 		},
 		{
+			name: "Find name with diacritics",
+			configuredUsers: []config.User{
+				{Name: "Çämûèl Lévesque", BitbucketUUID: ""},
+			},
+			apiResponse: []map[string]interface{}{
+				{
+					"display_name": "Camuèl Levesque",
+					"uuid":         "{clevesque}",
+				},
+			},
+			expectedUsers: map[string]config.User{
+				"{clevesque}": {Name: "Çämûèl Lévesque", BitbucketUUID: "{clevesque}"},
+			},
+		},
+		{
 			name: "Multiple matches",
 			configuredUsers: []config.User{
 				{Name: "John Doe", BitbucketUUID: ""},

@@ -4,7 +4,6 @@ go 1.12
 
 require (
 	github.com/aws/aws-sdk-go v1.23.21
-	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/golang/mock v1.3.1
 	github.com/google/go-github/v25 v25.1.3
@@ -22,5 +21,6 @@ require (
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/net v0.0.0-20190420063019-afa5a82059c6 // indirect
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
+	golang.org/x/text v0.3.0
 	gopkg.in/yaml.v2 v2.2.2
 )
