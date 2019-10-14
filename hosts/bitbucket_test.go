@@ -2,6 +2,7 @@ package hosts
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -84,6 +85,8 @@ func TestGetBitbucketRepositories(t *testing.T) {
 
 func TestGetBitbucketRepositoriesErrors(t *testing.T) {
 	t.Parallel()
+
+	os.Setenv("BITBUCKET_RETRY_DELAY", "0")
 
 	cases := []struct {
 		name          string

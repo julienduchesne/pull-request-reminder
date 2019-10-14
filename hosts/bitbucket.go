@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"github.com/julienduchesne/pull-request-reminder/config"
+	"github.com/julienduchesne/pull-request-reminder/utilities"
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/matryer/try"
 	"github.com/mitchellh/mapstructure"
@@ -134,6 +135,11 @@ func (host *bitbucketCloud) getPullRequests(owner, repoSlug string, users map[st
 
 	if err := try.Do(func(attempt int) (bool, error) {
 		response, err = host.client.GetPullRequests(owner, repoSlug, "")
+		if err != nil {
+			log.Warnf("Failed to fetch pull requests for repo %s. Waiting 10 seconds", repoSlug)
+			secondsToSleep, _ := strconv.Atoi(utilities.GetEnv("BITBUCKET_RETRY_DELAY", "10"))
+			time.Sleep(time.Duration(secondsToSleep) * time.Second)
+		}
 		return attempt < 5, err
 	}); err != nil {
 		return nil, fmt.Errorf("Error fetching pull requests from %v/%v in Bitbucket", owner, repoSlug)
@@ -146,6 +152,11 @@ func (host *bitbucketCloud) getPullRequests(owner, repoSlug string, users map[st
 	for _, listedPullRequest := range listedPullRequests.Values {
 		if err := try.Do(func(attempt int) (bool, error) {
 			response, err = host.client.GetPullRequests(owner, repoSlug, strconv.Itoa(listedPullRequest.ID))
+			if err != nil {
+				log.Warnf("Failed to fetch pull request %d for repo %s. Waiting 10 seconds", listedPullRequest.ID, repoSlug)
+				secondsToSleep, _ := strconv.Atoi(utilities.GetEnv("BITBUCKET_RETRY_DELAY", "10"))
+				time.Sleep(time.Duration(secondsToSleep) * time.Second)
+			}
 			return attempt < 5, err
 		}); err != nil {
 			return nil, fmt.Errorf("Error fetching the pull request with ID %v from %v/%v in Bitbucket", listedPullRequest.ID, owner, repoSlug)
@@ -247,6 +258,11 @@ func (host *bitbucketCloud) getTeamMembers(team string) ([]bitbucketTeamMember, 
 	)
 	if err := try.Do(func(attempt int) (bool, error) {
 		response, err = host.client.GetTeamMembers(team)
+		if err != nil {
+			log.Warn("Failed to fetch Bitbucket users. Waiting 10 seconds")
+			secondsToSleep, _ := strconv.Atoi(utilities.GetEnv("BITBUCKET_RETRY_DELAY", "10"))
+			time.Sleep(time.Duration(secondsToSleep) * time.Second)
+		}
 		return attempt < 5, err
 	}); err != nil {
 		return nil, fmt.Errorf("Error fetching members from team %s: %v", team, err)
