@@ -16,6 +16,17 @@ var testListPullRequestsResponse = map[string]interface{}{
 		{"id": 1},
 	},
 }
+var testListRepositories = map[string]interface{}{
+	"values": []map[string]interface{}{
+		{
+			"name": "test",
+			"project": map[string]interface{}{
+				"name": "My Team",
+				"key":  "MT",
+			},
+		},
+	},
+}
 
 var testGetPullRequestResponse = map[string]interface{}{
 	"title":       "My Pull Request",
@@ -47,40 +58,88 @@ func TestGetBitbucketRepositories(t *testing.T) {
 
 	utc, _ := time.LoadLocation("UTC")
 
-	host := &bitbucketCloud{
-		client:          &mockBitbucketClient{},
-		repositoryNames: []string{"jdoe/test"},
-		config: &config.TeamConfig{
-			Users: []config.User{
-				{Name: "John Doe", BitbucketUUID: "{jdoe}"},
-				{Name: "John Doe2", BitbucketUUID: "{jdoe2}"},
-				{Name: "John Doe3", BitbucketUUID: "{jdoe3}"},
-			},
+	cases := []struct {
+		name         string
+		projects     []string
+		repositories []string
+	}{
+		{
+			name:         "one repository",
+			repositories: []string{"jdoe/test"},
+			projects:     []string{},
+		},
+		{
+			name:         "one repository without team name",
+			repositories: []string{"test"},
+			projects:     []string{},
+		},
+		{
+			name:         "one project (matched with key) with one repo",
+			repositories: []string{},
+			projects:     []string{"MT"},
+		},
+		{
+			name:         "one project (matched with key) with one repo. With team name",
+			repositories: []string{},
+			projects:     []string{"jdoe/MT"},
+		},
+		{
+			name:         "one project (matched with name) with one repo",
+			repositories: []string{},
+			projects:     []string{"My Team"},
+		},
+		{
+			name:         "one project (matched with name) with one repo. With team name",
+			repositories: []string{},
+			projects:     []string{"jdoe/My Team"},
+		},
+		{
+			name:         "one project with one repo (duplicate)",
+			repositories: []string{"jdoe/test"},
+			projects:     []string{"MT"},
 		},
 	}
-	repositories, err := host.GetRepositories()
 
-	assert.Nil(t, err)
-	assert.Len(t, repositories, 1)
-	repository := repositories[0].(*RepositoryImpl)
-	assert.Equal(t, "jdoe/test", repository.Name)
-	assert.Equal(t, "https://bitbucket.org/jdoe/test", repository.Link)
-	assert.Equal(t, host, repository.Host)
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			host := &bitbucketCloud{
+				client:          &mockBitbucketClient{},
+				repositoryNames: tt.repositories,
+				projects:        tt.projects,
+				config: &config.TeamConfig{
+					Users: []config.User{
+						{Name: "John Doe", BitbucketUUID: "{jdoe}"},
+						{Name: "John Doe2", BitbucketUUID: "{jdoe2}"},
+						{Name: "John Doe3", BitbucketUUID: "{jdoe3}"},
+					},
+				},
+				teamName: "jdoe",
+			}
+			repositories, err := host.GetRepositories()
 
-	assert.Len(t, repository.OpenPullRequests, 1)
-	pullRequest := repository.OpenPullRequests[0]
-	assert.Equal(t, "John Doe2", pullRequest.Author.Name)
-	assert.Equal(t, "My Description", pullRequest.Description)
-	assert.Equal(t, "pr.com", pullRequest.Link)
-	assert.Equal(t, "My Pull Request", pullRequest.Title)
-	assert.Equal(t, time.Date(2019, time.August, 8, 17, 21, 52, 698243000, utc).UTC(), pullRequest.CreateTime.UTC())
-	assert.Equal(t, time.Date(2019, time.August, 8, 21, 12, 11, 405493000, utc).UTC(), pullRequest.UpdateTime.UTC())
+			assert.Nil(t, err)
+			assert.Len(t, repositories, 1)
+			repository := repositories[0].(*RepositoryImpl)
+			assert.Equal(t, "jdoe/test", repository.Name)
+			assert.Equal(t, "https://bitbucket.org/jdoe/test", repository.Link)
+			assert.Equal(t, host, repository.Host)
 
-	assert.Len(t, pullRequest.Reviewers, 1)
-	reviewer := pullRequest.Reviewers[0]
-	assert.False(t, reviewer.Approved)
-	assert.False(t, reviewer.RequestedChanges)
-	assert.Equal(t, "John Doe3", reviewer.User.Name)
+			assert.Len(t, repository.OpenPullRequests, 1)
+			pullRequest := repository.OpenPullRequests[0]
+			assert.Equal(t, "John Doe2", pullRequest.Author.Name)
+			assert.Equal(t, "My Description", pullRequest.Description)
+			assert.Equal(t, "pr.com", pullRequest.Link)
+			assert.Equal(t, "My Pull Request", pullRequest.Title)
+			assert.Equal(t, time.Date(2019, time.August, 8, 17, 21, 52, 698243000, utc).UTC(), pullRequest.CreateTime.UTC())
+			assert.Equal(t, time.Date(2019, time.August, 8, 21, 12, 11, 405493000, utc).UTC(), pullRequest.UpdateTime.UTC())
+
+			assert.Len(t, pullRequest.Reviewers, 1)
+			reviewer := pullRequest.Reviewers[0]
+			assert.False(t, reviewer.Approved)
+			assert.False(t, reviewer.RequestedChanges)
+			assert.Equal(t, "John Doe3", reviewer.User.Name)
+		})
+	}
 }
 
 func TestGetBitbucketRepositoriesErrors(t *testing.T) {
@@ -129,7 +188,7 @@ func TestGetBitbucketRepositoriesErrors(t *testing.T) {
 				},
 			}
 			if !tt.emptyTeamName {
-				host.config.Hosts.Bitbucket.Team = "my-team"
+				host.teamName = "my-team"
 			}
 			host.config.Hosts.Bitbucket.FindUsersInTeam = true
 			_, err := host.GetRepositories()
@@ -247,8 +306,8 @@ func TestGetUsers(t *testing.T) {
 				config: &config.TeamConfig{
 					Users: tt.configuredUsers,
 				},
+				teamName: "Anything",
 			}
-			host.config.Hosts.Bitbucket.Team = "Anything"
 			host.config.Hosts.Bitbucket.FindUsersInTeam = tt.apiResponse != nil
 			users, err := host.GetUsers()
 			if tt.expectError {
@@ -267,6 +326,10 @@ type mockBitbucketClient struct {
 	errorOnListPullRequests   bool
 	errorOnGettingTeamMembers bool
 	getTeamResponse           []map[string]interface{}
+}
+
+func (mock *mockBitbucketClient) GetRepositories(team string) (interface{}, error) {
+	return testListRepositories, nil
 }
 
 func (mock *mockBitbucketClient) GetPullRequests(owner, slug, id string) (interface{}, error) {

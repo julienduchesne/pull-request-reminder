@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-github/v25/github"
 	"github.com/julienduchesne/pull-request-reminder/config"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
 
@@ -54,6 +55,7 @@ func newGithubHost(config *config.TeamConfig) *githubHost {
 }
 
 func (host *githubHost) getPullRequests(owner, repoSlug string, users map[string]config.User) ([]*PullRequest, error) {
+	log.Debugf("Fetching Github pull requests for %s/%s", owner, repoSlug)
 	var result = []*PullRequest{}
 
 	response, _, err := host.client.ListPullRequests(owner, repoSlug, &github.PullRequestListOptions{State: "open"})
@@ -124,6 +126,7 @@ func (host *githubHost) GetUsers() (map[string]config.User, error) {
 }
 
 func (host *githubHost) GetRepositories() ([]Repository, error) {
+	log.Debug("Getting Github information")
 	users, _ := host.GetUsers()
 
 	repositories := []Repository{}

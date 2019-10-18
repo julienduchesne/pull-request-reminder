@@ -27,6 +27,7 @@ type BitbucketConfig struct {
 	Username        string   `yaml:"username"`
 	Password        string   `yaml:"password"`
 	Repositories    []string `yaml:"repositories"`
+	Projects        []string `yaml:"projects"`
 	Team            string   `yaml:"team"`
 	FindUsersInTeam bool     `yaml:"find_users_in_team"`
 }
@@ -66,7 +67,7 @@ func (config *TeamConfig) GetNumberOfNeededApprovals() int {
 // IsBitbucketConfigured returns true if all necessary configurations are set to handle Bitbucket
 func (config *TeamConfig) IsBitbucketConfigured() bool {
 	bitbucketConfig := config.Hosts.Bitbucket
-	return len(bitbucketConfig.Repositories) > 0 && bitbucketConfig.Username != "" && bitbucketConfig.Password != ""
+	return len(bitbucketConfig.Repositories)+len(bitbucketConfig.Projects) > 0 && bitbucketConfig.Username != "" && bitbucketConfig.Password != ""
 }
 
 // GetGithubUsers returns a map of all github users'

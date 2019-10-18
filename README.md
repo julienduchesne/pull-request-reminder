@@ -33,12 +33,17 @@ This app supports a configuration file with following format (JSON or YAML)
             "hosts": {
                 "bitbucket":{
                     "repositories":[
-                        "owner/repo1",
-                        "owner/repo2"
+                        "repo1",
+                        "owner/repo2" // Both formats are supported
+                    ],
+                    "projects": [ // Fetch all repositories from the given projects
+                        "projectName",
+                        "projectKey",
+                        "owner/projectKey"
                     ],
                     "username":"user",
                     "password":"app_password",
-                    "team": "my_team",
+                    "team": "owner",
                     "find_users_in_team": true // If this attribute and `team` is set, user UUIDs will be found from the user name. An error will be raised if there is more than one match for a single user. To fix that issues, the user UUID must be set manually.
                 },
                 "github":{

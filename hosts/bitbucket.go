@@ -39,6 +39,14 @@ type bitbucketPullRequest struct {
 	Title string
 }
 
+type bitbucketRepository struct {
+	Name    string
+	Project struct {
+		Key  string
+		Name string
+	}
+}
+
 type bitbucketTeamMember struct {
 	CreatedOn string `mapstructure:"created_on"`
 	Links     map[string]struct {
@@ -84,6 +92,7 @@ func (pr *bitbucketPullRequest) ToGenericPullRequest(users map[string]config.Use
 
 type bitbucketClient interface {
 	GetPullRequests(owner, slug, id string) (interface{}, error)
+	GetRepositories(team string) (interface{}, error)
 	GetTeamMembers(team string) (interface{}, error)
 }
 
@@ -98,6 +107,9 @@ func (wrapper *bitbucketClientWrapper) GetPullRequests(owner, slug, id string) (
 		ID:       id,
 	})
 }
+func (wrapper *bitbucketClientWrapper) GetRepositories(team string) (interface{}, error) {
+	return wrapper.client.Repositories.ListForTeam(&bitbucket.RepositoriesOptions{Owner: team})
+}
 
 func (wrapper *bitbucketClientWrapper) GetTeamMembers(team string) (interface{}, error) {
 	return wrapper.client.Teams.Members(team)
@@ -107,6 +119,8 @@ type bitbucketCloud struct {
 	config          *config.TeamConfig
 	client          bitbucketClient
 	repositoryNames []string
+	projects        []string
+	teamName        string
 	users           map[string]config.User
 }
 
@@ -116,11 +130,105 @@ func newBitbucketCloud(config *config.TeamConfig) *bitbucketCloud {
 		config:          config,
 		client:          &bitbucketClientWrapper{client: bitbucket.NewBasicAuth(bitbucketConfig.Username, bitbucketConfig.Password)},
 		repositoryNames: bitbucketConfig.Repositories,
+		projects:        bitbucketConfig.Projects,
+		teamName:        bitbucketConfig.Team,
 	}
 
 }
 
+func (host *bitbucketCloud) GetConfig() *config.TeamConfig {
+	return host.config
+}
+
+func (host *bitbucketCloud) GetName() string {
+	return "Bitbucket"
+}
+
+func (host *bitbucketCloud) GetUsers() (map[string]config.User, error) {
+	if host.users == nil {
+		host.users = map[string]config.User{}
+
+		// List all bitbucket team members
+		var (
+			err         error
+			teamMembers []bitbucketTeamMember
+		)
+		findUsersInTeam := host.config.Hosts.Bitbucket.FindUsersInTeam
+		if findUsersInTeam {
+			if host.teamName == "" {
+				return nil, fmt.Errorf("Bitbucket is set to find users in the team but the team name is not set")
+			}
+			if teamMembers, err = host.getTeamMembers(host.teamName); err != nil {
+				return nil, err
+			}
+		}
+
+		for _, user := range host.config.Users {
+			// If a team member's name matches with a user missing a UUID, use the team member's UUID
+			if user.BitbucketUUID == "" && findUsersInTeam {
+				for _, member := range teamMembers {
+					if normalizeName(member.DisplayName) == normalizeName(user.Name) || normalizeName(member.Nickname) == normalizeName(user.Name) {
+						if user.BitbucketUUID != "" {
+							return nil, fmt.Errorf("User %s has multiple matches for bitbucket users. Please set the UUID directly", user.Name)
+						}
+						user.BitbucketUUID = member.UUID
+					}
+				}
+			}
+
+			// If the UUID of a user is set, we're good to go. We can use that user
+			if user.BitbucketUUID != "" {
+				if userWithSameUUID, ok := host.users[user.BitbucketUUID]; ok {
+					return nil, fmt.Errorf("The users %s and %s have the same UUID (%s)", user.Name, userWithSameUUID.Name, user.BitbucketUUID)
+				}
+				host.users[user.BitbucketUUID] = user
+			} else {
+				log.Warningf("User %s has no set Bitbucket UUID", user.Name)
+			}
+		}
+	}
+
+	return host.users, nil
+}
+
+func (host *bitbucketCloud) GetRepositories() ([]Repository, error) {
+	log.Debug("Getting Bitbucket information")
+	users, err := host.GetUsers()
+	if err != nil {
+		return nil, fmt.Errorf("Error fetching users from Bitbucket: %v", err)
+	}
+
+	repositoryNames := host.repositoryNames
+	if len(host.projects) > 0 {
+		newRepositoryNames, err := host.getRepositoriesFromProjects(host.projects)
+		if err != nil {
+			return nil, fmt.Errorf("Error fetching repositories from Bitbucket: %v", err)
+		}
+		repositoryNames = append(repositoryNames, newRepositoryNames...)
+	}
+	for index, repositoryName := range repositoryNames {
+		if !strings.Contains(repositoryName, "/") {
+			repositoryNames[index] = host.teamName + "/" + repositoryName
+		}
+	}
+
+	repositories := []Repository{}
+	for _, repositoryName := range utilities.Unique(repositoryNames) {
+		splitRepository := strings.Split(repositoryName, "/")
+		owner, slug := splitRepository[0], splitRepository[1]
+
+		pullRequests, err := host.getPullRequests(owner, slug, users)
+		if err != nil {
+			return nil, fmt.Errorf("Caught an error while describing pull requests: %v", err)
+		}
+		repository := NewRepository(host, repositoryName, fmt.Sprintf("https://bitbucket.org/%v", repositoryName), pullRequests)
+		repositories = append(repositories, repository)
+	}
+	return repositories, nil
+}
+
 func (host *bitbucketCloud) getPullRequests(owner, repoSlug string, users map[string]config.User) ([]*PullRequest, error) {
+	log.Debugf("Fetching Bitbucket pull requests for %s/%s", owner, repoSlug)
 	var (
 		response interface{}
 		err      error
@@ -172,83 +280,48 @@ func (host *bitbucketCloud) getPullRequests(owner, repoSlug string, users map[st
 	return result, nil
 }
 
-func (host *bitbucketCloud) GetConfig() *config.TeamConfig {
-	return host.config
-}
-
-func (host *bitbucketCloud) GetName() string {
-	return "Bitbucket"
-}
-
-func (host *bitbucketCloud) GetUsers() (map[string]config.User, error) {
-	if host.users == nil {
-		host.users = map[string]config.User{}
-
-		// List all bitbucket team members
-		var (
-			err         error
-			teamMembers []bitbucketTeamMember
-		)
-		findUsersInTeam := host.config.Hosts.Bitbucket.FindUsersInTeam
-		if findUsersInTeam {
-			team := host.config.Hosts.Bitbucket.Team
-			if team == "" {
-				return nil, fmt.Errorf("Bitbucket is set to find users in the team but the team name is not set")
-			}
-			if teamMembers, err = host.getTeamMembers(team); err != nil {
-				return nil, err
-			}
-		}
-
-		for _, user := range host.config.Users {
-			// If a team member's name matches with a user missing a UUID, use the team member's UUID
-			if user.BitbucketUUID == "" && findUsersInTeam {
-				for _, member := range teamMembers {
-					if normalizeName(member.DisplayName) == normalizeName(user.Name) || normalizeName(member.Nickname) == normalizeName(user.Name) {
-						if user.BitbucketUUID != "" {
-							return nil, fmt.Errorf("User %s has multiple matches for bitbucket users. Please set the UUID directly", user.Name)
-						}
-						user.BitbucketUUID = member.UUID
-					}
-				}
-			}
-
-			// If the UUID of a user is set, we're good to go. We can use that user
-			if user.BitbucketUUID != "" {
-				if userWithSameUUID, ok := host.users[user.BitbucketUUID]; ok {
-					return nil, fmt.Errorf("The users %s and %s have the same UUID (%s)", user.Name, userWithSameUUID.Name, user.BitbucketUUID)
-				}
-				host.users[user.BitbucketUUID] = user
-			} else {
-				log.Warningf("User %s has no set Bitbucket UUID", user.Name)
-			}
-		}
-	}
-
-	return host.users, nil
-}
-
-func (host *bitbucketCloud) GetRepositories() ([]Repository, error) {
-	users, err := host.GetUsers()
-	if err != nil {
-		return nil, fmt.Errorf("Error fetching users from Bitbucket: %v", err)
-	}
-
-	repositories := []Repository{}
-	for _, repositoryName := range host.repositoryNames {
-		splitRepository := strings.Split(repositoryName, "/")
-		owner, slug := splitRepository[0], splitRepository[1]
-		pullRequests, err := host.getPullRequests(owner, slug, users)
+func (host *bitbucketCloud) getRepositoriesFromProjects(projects []string) ([]string, error) {
+	log.Debug("Fetching Bitbucket repositories")
+	listedRepositories := &struct {
+		Values []bitbucketRepository
+	}{}
+	var (
+		err      error
+		response interface{}
+	)
+	if err := try.Do(func(attempt int) (bool, error) {
+		response, err = host.client.GetRepositories(host.teamName)
 		if err != nil {
-			return nil, fmt.Errorf("Caught an error while describing pull requests: %v", err)
+			log.Warn("Failed to fetch repositories. Waiting 10 seconds")
+			secondsToSleep, _ := strconv.Atoi(utilities.GetEnv("BITBUCKET_RETRY_DELAY", "10"))
+			time.Sleep(time.Duration(secondsToSleep) * time.Second)
 		}
-		repository := NewRepository(host, repositoryName, fmt.Sprintf("https://bitbucket.org/%v", repositoryName), pullRequests)
-		repositories = append(repositories, repository)
+		return attempt < 5, err
+	}); err != nil {
+		return nil, fmt.Errorf("Error fetching repositories from team %s: %v", host.teamName, err)
 	}
-	return repositories, nil
+	if err := mapstructure.Decode(response, &listedRepositories); err != nil {
+		return nil, fmt.Errorf("Error parsing repositories from bitbucket response: %v", err)
+	}
+	names := []string{}
+	for _, repository := range listedRepositories.Values {
+		projectKey, projectName := strings.ToLower(repository.Project.Key), strings.ToLower(repository.Project.Name)
+		for _, givenProject := range projects {
+			givenProject = strings.ToLower(givenProject)
+			if strings.Contains(givenProject, "/") {
+				givenProject = strings.Split(givenProject, "/")[1]
+			}
+			if givenProject == projectKey || givenProject == projectName {
+				names = append(names, repository.Name)
+				break
+			}
+		}
+	}
+	return names, nil
 }
 
 func (host *bitbucketCloud) getTeamMembers(team string) ([]bitbucketTeamMember, error) {
+	log.Debugf("Fetching Bitbucket team members for %s", team)
 	listedMembers := &struct {
 		Values []bitbucketTeamMember
 	}{}
