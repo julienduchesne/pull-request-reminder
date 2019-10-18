@@ -80,6 +80,7 @@ Anytime a pull request is not ready to review, simply add `WIP` somewhere in its
 
 ### To run
 * Run the docker image located here: https://hub.docker.com/r/julienduchesne/pull-request-reminder
+* Download an executable from the Github releases
 * Build the executable using `go build` and run it
 
 ### Environment

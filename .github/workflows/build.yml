@@ -18,9 +18,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v1
-        
+
       - name: Build
-        env: 
+        env:
           CGO_ENABLED: 0
         run: go build -v
 
@@ -47,3 +47,10 @@ jobs:
           export tag=$(cut -d'/' -f3 <<<'${{ github.ref }}')
           docker build . -t julienduchesne/pull-request-reminder:$tag
           docker push julienduchesne/pull-request-reminder:$tag
+
+      - name: Push release
+        if: github.ref != 'refs/heads/master'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sL https://git.io/goreleaser | bash;
