@@ -2,7 +2,10 @@ package hosts
 
 import (
 	"fmt"
+	"path/filepath"
+	reflect "reflect"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -91,28 +94,28 @@ func (pr *bitbucketPullRequest) ToGenericPullRequest(users map[string]config.Use
 }
 
 type bitbucketClient interface {
-	GetPullRequests(owner, slug, id string) (interface{}, error)
-	GetRepositories(team string) (interface{}, error)
-	GetTeamMembers(team string) (interface{}, error)
+	GetPullRequests(args ...string) (interface{}, error)
+	GetRepositories(args ...string) (interface{}, error)
+	GetTeamMembers(args ...string) (interface{}, error)
 }
 
 type bitbucketClientWrapper struct {
 	client *bitbucket.Client
 }
 
-func (wrapper *bitbucketClientWrapper) GetPullRequests(owner, slug, id string) (interface{}, error) {
+func (wrapper *bitbucketClientWrapper) GetPullRequests(args ...string) (interface{}, error) {
 	return wrapper.client.Repositories.PullRequests.Get(&bitbucket.PullRequestsOptions{
-		Owner:    owner,
-		RepoSlug: slug,
-		ID:       id,
+		Owner:    args[0],
+		RepoSlug: args[1],
+		ID:       args[2],
 	})
 }
-func (wrapper *bitbucketClientWrapper) GetRepositories(team string) (interface{}, error) {
-	return wrapper.client.Repositories.ListForTeam(&bitbucket.RepositoriesOptions{Owner: team})
+func (wrapper *bitbucketClientWrapper) GetRepositories(args ...string) (interface{}, error) {
+	return wrapper.client.Repositories.ListForTeam(&bitbucket.RepositoriesOptions{Owner: args[0]})
 }
 
-func (wrapper *bitbucketClientWrapper) GetTeamMembers(team string) (interface{}, error) {
-	return wrapper.client.Teams.Members(team)
+func (wrapper *bitbucketClientWrapper) GetTeamMembers(args ...string) (interface{}, error) {
+	return wrapper.client.Teams.Members(args[0])
 }
 
 type bitbucketCloud struct {
@@ -228,50 +231,20 @@ func (host *bitbucketCloud) GetRepositories() ([]Repository, error) {
 }
 
 func (host *bitbucketCloud) getPullRequests(owner, repoSlug string, users map[string]config.User) ([]*PullRequest, error) {
-	log.Debugf("Fetching Bitbucket pull requests for %s/%s", owner, repoSlug)
-	var (
-		response interface{}
-		err      error
-	)
-
 	result := []*PullRequest{}
+
 	listedPullRequests := &struct {
 		Values []struct {
 			ID int
 		}
 	}{}
-
-	if err := try.Do(func(attempt int) (bool, error) {
-		response, err = host.client.GetPullRequests(owner, repoSlug, "")
-		if err != nil {
-			log.Warnf("Failed to fetch pull requests for repo %s. Waiting 10 seconds", repoSlug)
-			secondsToSleep, _ := strconv.Atoi(utilities.GetEnv("BITBUCKET_RETRY_DELAY", "10"))
-			time.Sleep(time.Duration(secondsToSleep) * time.Second)
-		}
-		return attempt < 5, err
-	}); err != nil {
-		return nil, fmt.Errorf("Error fetching pull requests from %v/%v in Bitbucket", owner, repoSlug)
-	}
-
-	if err = mapstructure.Decode(response, &listedPullRequests); err != nil {
+	if err := host.callAPI(&listedPullRequests, host.client.GetPullRequests, owner, repoSlug, ""); err != nil {
 		return nil, err
 	}
 
 	for _, listedPullRequest := range listedPullRequests.Values {
-		if err := try.Do(func(attempt int) (bool, error) {
-			response, err = host.client.GetPullRequests(owner, repoSlug, strconv.Itoa(listedPullRequest.ID))
-			if err != nil {
-				log.Warnf("Failed to fetch pull request %d for repo %s. Waiting 10 seconds", listedPullRequest.ID, repoSlug)
-				secondsToSleep, _ := strconv.Atoi(utilities.GetEnv("BITBUCKET_RETRY_DELAY", "10"))
-				time.Sleep(time.Duration(secondsToSleep) * time.Second)
-			}
-			return attempt < 5, err
-		}); err != nil {
-			return nil, fmt.Errorf("Error fetching the pull request with ID %v from %v/%v in Bitbucket", listedPullRequest.ID, owner, repoSlug)
-		}
-
 		var pullRequest bitbucketPullRequest
-		if err = mapstructure.Decode(response, &pullRequest); err != nil {
+		if err := host.callAPI(&pullRequest, host.client.GetPullRequests, owner, repoSlug, strconv.Itoa(listedPullRequest.ID)); err != nil {
 			return nil, err
 		}
 		result = append(result, pullRequest.ToGenericPullRequest(users))
@@ -281,27 +254,11 @@ func (host *bitbucketCloud) getPullRequests(owner, repoSlug string, users map[st
 }
 
 func (host *bitbucketCloud) getRepositoriesFromProjects(projects []string) ([]string, error) {
-	log.Debug("Fetching Bitbucket repositories")
 	listedRepositories := &struct {
 		Values []bitbucketRepository
 	}{}
-	var (
-		err      error
-		response interface{}
-	)
-	if err := try.Do(func(attempt int) (bool, error) {
-		response, err = host.client.GetRepositories(host.teamName)
-		if err != nil {
-			log.Warn("Failed to fetch repositories. Waiting 10 seconds")
-			secondsToSleep, _ := strconv.Atoi(utilities.GetEnv("BITBUCKET_RETRY_DELAY", "10"))
-			time.Sleep(time.Duration(secondsToSleep) * time.Second)
-		}
-		return attempt < 5, err
-	}); err != nil {
-		return nil, fmt.Errorf("Error fetching repositories from team %s: %v", host.teamName, err)
-	}
-	if err := mapstructure.Decode(response, &listedRepositories); err != nil {
-		return nil, fmt.Errorf("Error parsing repositories from bitbucket response: %v", err)
+	if err := host.callAPI(&listedRepositories, host.client.GetRepositories, host.teamName); err != nil {
+		return nil, err
 	}
 	names := []string{}
 	for _, repository := range listedRepositories.Values {
@@ -321,30 +278,37 @@ func (host *bitbucketCloud) getRepositoriesFromProjects(projects []string) ([]st
 }
 
 func (host *bitbucketCloud) getTeamMembers(team string) ([]bitbucketTeamMember, error) {
-	log.Debugf("Fetching Bitbucket team members for %s", team)
 	listedMembers := &struct {
 		Values []bitbucketTeamMember
 	}{}
+	if err := host.callAPI(&listedMembers, host.client.GetTeamMembers, team); err != nil {
+		return nil, err
+	}
+	return listedMembers.Values, nil
+}
+
+func (host *bitbucketCloud) callAPI(value interface{}, fn func(args ...string) (interface{}, error), args ...string) error {
+	functionName := strings.Split(strings.TrimPrefix(filepath.Ext(runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()), "."), "-")[0]
+	log.Debugf("Calling Bitbucket %s for %v", functionName, args)
 	var (
 		err      error
 		response interface{}
 	)
 	if err := try.Do(func(attempt int) (bool, error) {
-		response, err = host.client.GetTeamMembers(team)
+		response, err = fn(args...)
 		if err != nil {
-			log.Warn("Failed to fetch Bitbucket users. Waiting 10 seconds")
+			log.Warnf("Failed to call %s. Waiting 10 seconds", functionName)
 			secondsToSleep, _ := strconv.Atoi(utilities.GetEnv("BITBUCKET_RETRY_DELAY", "10"))
 			time.Sleep(time.Duration(secondsToSleep) * time.Second)
 		}
 		return attempt < 5, err
 	}); err != nil {
-		return nil, fmt.Errorf("Error fetching members from team %s: %v", team, err)
+		return fmt.Errorf("Error calling Bitbucket %s for %v: %v", functionName, args, err)
 	}
-	if err := mapstructure.Decode(response, &listedMembers); err != nil {
-		return nil, fmt.Errorf("Error parsing team members from bitbucket response: %v", err)
+	if err := mapstructure.Decode(response, value); err != nil {
+		return fmt.Errorf("Error parsing Bibucket response from %s for %v: %v", functionName, args, err)
 	}
-
-	return listedMembers.Values, nil
+	return nil
 }
 
 func isMn(r rune) bool {

@@ -156,17 +156,17 @@ func TestGetBitbucketRepositoriesErrors(t *testing.T) {
 		{
 			name:        "get error",
 			client:      &mockBitbucketClient{errorOnGetPullRequest: true},
-			expectError: "Caught an error while describing pull requests: Error fetching the pull request with ID 1 from jdoe/test in Bitbucket",
+			expectError: "Caught an error while describing pull requests: Error calling Bitbucket GetPullRequests for [jdoe test 1]: get error",
 		},
 		{
 			name:        "list error",
 			client:      &mockBitbucketClient{errorOnListPullRequests: true},
-			expectError: "Caught an error while describing pull requests: Error fetching pull requests from jdoe/test in Bitbucket",
+			expectError: "Caught an error while describing pull requests: Error calling Bitbucket GetPullRequests for [jdoe test ]: list error",
 		},
 		{
 			name:        "get team members error",
 			client:      &mockBitbucketClient{errorOnGettingTeamMembers: true},
-			expectError: "Error fetching users from Bitbucket: Error fetching members from team my-team: Get team members error",
+			expectError: "Error fetching users from Bitbucket: Error calling Bitbucket GetTeamMembers for [my-team]: Get team members error",
 		},
 		{
 			name:          "get team members error",
@@ -328,11 +328,12 @@ type mockBitbucketClient struct {
 	getTeamResponse           []map[string]interface{}
 }
 
-func (mock *mockBitbucketClient) GetRepositories(team string) (interface{}, error) {
+func (mock *mockBitbucketClient) GetRepositories(args ...string) (interface{}, error) {
 	return testListRepositories, nil
 }
 
-func (mock *mockBitbucketClient) GetPullRequests(owner, slug, id string) (interface{}, error) {
+func (mock *mockBitbucketClient) GetPullRequests(args ...string) (interface{}, error) {
+	id := args[2]
 	if id != "" {
 		if mock.errorOnGetPullRequest {
 			return nil, fmt.Errorf("get error")
@@ -345,7 +346,7 @@ func (mock *mockBitbucketClient) GetPullRequests(owner, slug, id string) (interf
 	return testListPullRequestsResponse, nil
 }
 
-func (mock *mockBitbucketClient) GetTeamMembers(team string) (interface{}, error) {
+func (mock *mockBitbucketClient) GetTeamMembers(args ...string) (interface{}, error) {
 	if mock.errorOnGettingTeamMembers {
 		return nil, fmt.Errorf("Get team members error")
 	}
