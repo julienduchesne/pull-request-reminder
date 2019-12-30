@@ -51,6 +51,8 @@ github.com/ktrysmt/go-bitbucket v0.4.1 h1:2zvvOfZh5Y1T96B2gYDVs3XpxL68gw/f0WSFMy
 github.com/ktrysmt/go-bitbucket v0.4.1/go.mod h1:gGQbTWdw7dtX262/XCcHeWDZEsEzbvnmQD66x227mwI=
 github.com/ktrysmt/go-bitbucket v0.5.2 h1:q0XS69zqwStOSO4WFM2xmW+Rjx/IipNimDTYk1w6GdU=
 github.com/ktrysmt/go-bitbucket v0.5.2/go.mod h1:eq4bfJC9uZf/4rctCcT8motO/BuiF2GsAYjmFhy5JrU=
+github.com/ktrysmt/go-bitbucket v0.5.3 h1:w0FRni6+CQgLr0ag5ySZ5SKL9OkwN3ZMN7ri5EwQ2rQ=
+github.com/ktrysmt/go-bitbucket v0.5.3/go.mod h1:eq4bfJC9uZf/4rctCcT8motO/BuiF2GsAYjmFhy5JrU=
 github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 h1:JAEbJn3j/FrhdWA9jW8B5ajsLIjeuEHLi8xE4fk997o=
 github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2/go.mod h1:0KeJpeMD6o+O4hW7qJOT7vyQPKrWmj26uf5wMc/IiIs=
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
