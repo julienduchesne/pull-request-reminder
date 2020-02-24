@@ -59,6 +59,8 @@ github.com/ktrysmt/go-bitbucket v0.5.2 h1:q0XS69zqwStOSO4WFM2xmW+Rjx/IipNimDTYk1
 github.com/ktrysmt/go-bitbucket v0.5.2/go.mod h1:eq4bfJC9uZf/4rctCcT8motO/BuiF2GsAYjmFhy5JrU=
 github.com/ktrysmt/go-bitbucket v0.5.3 h1:w0FRni6+CQgLr0ag5ySZ5SKL9OkwN3ZMN7ri5EwQ2rQ=
 github.com/ktrysmt/go-bitbucket v0.5.3/go.mod h1:eq4bfJC9uZf/4rctCcT8motO/BuiF2GsAYjmFhy5JrU=
+github.com/ktrysmt/go-bitbucket v0.5.6 h1:fUhKd0OOtvlavcIrvhSnUCDT84xO8cWFiFz/PayKZy0=
+github.com/ktrysmt/go-bitbucket v0.5.6/go.mod h1:9u0v3hsd2rqCHRIpbir1oP7F58uo5dq19sBYvuMoyQ4=
 github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 h1:JAEbJn3j/FrhdWA9jW8B5ajsLIjeuEHLi8xE4fk997o=
 github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2/go.mod h1:0KeJpeMD6o+O4hW7qJOT7vyQPKrWmj26uf5wMc/IiIs=
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
@@ -103,6 +105,7 @@ golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6 h1:bjcUS9ztw9kFmmIxJInhon/0
 golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58 h1:8gQV6CLnAEikrhgkHFbMAEhagSSnXWGV915qUMm9mrU=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
+golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sys v0.0.0-20180224232135-f6cff0780e54/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223 h1:DH4skfRX4EBpamg7iV4ZlCpblAHI6s6TDM39bFZumv8=
